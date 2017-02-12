@@ -1,0 +1,14 @@
+-cc=vbccm68k -quiet -hunkdebug %s -o= %s %s -O=%ld -Ivincludeos1:
+-ccv=vbccm68k -hunkdebug %s -o= %s %s -O=%ld -Ivincludeos1:
+-as=vasmm68k_mot -quiet -Fhunk -phxass %s -o %s
+-asv=vasmm68k_mot -Fhunk -phxass %s -o %s
+-rm=del quiet %s
+-rmv=del %s
+-ld=vlink -bamigahunk -x -Bstatic -Cvbcc -nostdlib vlibos3:startup13.o %s %s -Lvlibos3: -lvc -o %s
+-l2=vlink -bamigahunk -x -Bstatic -Cvbcc -nostdlib %s %s -Lvlibos3: -o %s
+-ldv=vlink -bamigahunk -t -x -Bstatic -Cvbcc -nostdlib vlibos3:startup13.o %s %s -Lvlibos3: -lvc -o %s
+-l2v=vlink -bamigahunk -t -x -Bstatic -Cvbcc -nostdlib %s %s -Lvlibos3: -o %s
+-ldnodb=-s
+-ul=-l%s
+-cf=-F%s
+-ml=500
