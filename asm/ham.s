@@ -263,7 +263,7 @@ DISPW           equ     ScreenWidth
 DISPH           equ     ScreenHeight
 
 ; display window in raster coordinates (HSTART must be odd)
-HSTART          equ     129+(256-ScreenWidth)/2
+HSTART          equ     129+(256-ScreenWidth)/2+8
 VSTART          equ     36 ; +(256-ScreenHeight)/2
 VEND            equ     VSTART+DISPH
 VEND2			equ		14
@@ -280,7 +280,7 @@ Copper1:
 	dc.w	$0100,$0000
 	dc.w	$0100,$0200
 	dc.w	$008e,$2c00+HSTART
-	dc.w	$0090,$2c00+HSTART+ScreenWidth-$100+16
+	dc.w	$0090,$2c00+HSTART+ScreenWidth-$100
 	dc.w	$0092,DFETCHSTART
 	dc.w	$0094,DFETCHSTOP
 	dc.w	$0108,0 ; ScreenWidth/8*(Planes-1)
@@ -351,7 +351,7 @@ Copper2:
 	dc.w	$0100,$0000
 	dc.w	$0100,$0200
 	dc.w	$008e,$2c00+HSTART
-	dc.w	$0090,$2c00+HSTART+ScreenWidth-$100+16
+	dc.w	$0090,$2c00+HSTART+ScreenWidth-$100
 	dc.w	$0092,DFETCHSTART
 	dc.w	$0094,DFETCHSTOP
 	dc.w	$0108,0 ; ScreenWidth/8*(Planes-1)
@@ -422,7 +422,7 @@ Copper3:
 	dc.w	$0100,$0000
 	dc.w	$0100,$0200
 	dc.w	$008e,$2c00+HSTART
-	dc.w	$0090,$2c00+HSTART+ScreenWidth-$100+16
+	dc.w	$0090,$2c00+HSTART+ScreenWidth-$100
 	dc.w	$0092,DFETCHSTART
 	dc.w	$0094,DFETCHSTOP
 	dc.w	$0108,0 ; ScreenWidth/8*(Planes-1)
@@ -547,10 +547,10 @@ picindex:
 	even
 filename:
 ;	dc.b 	"ghost.tmp",0
-;	dc.b 	"nvidia.tmp",0
+	dc.b 	"nvidia.tmp",0
 ;	dc.b 	"darksouls3.tmp",0
 ;	dc.b 	"ray.tmp",0
-	dc.b 	"cocoon.tmp",0
+;	dc.b 	"cocoon.tmp",0
 	even
 pic:
 	ds.b 	(320/8*ScreenHeight*6+15*2*ScreenHeight)*8

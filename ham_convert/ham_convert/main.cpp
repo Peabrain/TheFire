@@ -39,13 +39,6 @@ float yuv_imatrix[3][3] = {
 	{ 1		,-0.39465	,-0.58060 },
 	{ 1		,2.03211	,0 }
 };
-typedef struct COPYBUF
-{
-	int ra[CT_DIM];
-	int ga[CT_DIM];
-	int ba[CT_DIM];
-	int pre_index;
-};
 
 typedef struct LUM
 {
@@ -131,9 +124,9 @@ typedef struct DATA
 
 void convert(void *data);
 void process(unsigned  char *mem, unsigned char *ham, int w, int h, DATA *Data);
-void convertSequence(const char *path, int len, int zz);
+void convertSequence(const char *path,int start, int Len, int zz);
 int changeColor(int c, int x, int y, unsigned char *pl, unsigned int bit, int lum, bool dith);
-int prepareIndexBuffer(LUM *lumlist, int *r_tab, int *g_tab, int *b_tab, unsigned short *ham_color, int w, int h, unsigned char *mem, COPYBUF *copyBuffer);
+int prepareIndexBuffer(LUM *lumlist, int *r_tab, int *g_tab, int *b_tab, unsigned short *ham_color, int w, int h, unsigned char *mem);
 void doDCT(unsigned char*mem, int w, int h);
 void doFFT(unsigned char*mem);
 unsigned int getBlockCodeHori(unsigned char *mem);
@@ -143,12 +136,12 @@ int main(int argc, const char * argv[])
 {
 	stats.copied_pattern = 0;
 	stats.rendered_pattern = 0;
-	//    convertSequence("ghost",3440,2);
-//    convertSequence("nvidia",4260,2);
-    //    convertSequence("darksouls3",3392,2);
+//    convertSequence("ghost",0,3440,2);
+    convertSequence("nvidia",0,4260,2);
+//	convertSequence("darksouls3",0,3392,2);
 //    convertSequence("ray",3862,2);
-	convertSequence("cocoon", 11161, 2);
-//	convertSequence("cocoon", 1, 2);
+//	convertSequence("cocoon", 0,11161, 2);
+//	convertSequence("cocoon", 0,2000, 2);
 	//	convertSequence("cocoon", 6000, 3);
 	//    convertSequence("test",1,2);
 
@@ -160,9 +153,15 @@ int main(int argc, const char * argv[])
 	printf("Copied Pattern: %i\n", stats.copied_pattern);
 	return 0;
 }
-void convertSequence(const char *path,int len,int zz)
+void convertSequence(const char *path,int start,int Len,int zz)
 {
+#define CACHES 4
+	unsigned char CacheBuffer[320 / 8 * Height * 6 * CACHES];
+	int CacheIdx = 0;
+	int len = start + Len;
     char filename2[256];
+
+	memset(CacheBuffer, 0, 320 / 8 * Height * 6 * CACHES);
     sprintf(filename2,"../asm/%s.tmp",path);
     if(FILE *f2 = fopen(filename2,"w+b"))
     {
@@ -170,7 +169,7 @@ void convertSequence(const char *path,int len,int zz)
     }
     if(FILE *f2 = fopen(filename2,"a+b"))
     {
-        int count = 0,count2 = 0,j = 0;
+        int count = start,count2 = 0,j = 0;
         std::thread *t1[THREADS];
         DATA data[THREADS];
         for(int i = 0;i < THREADS;i++)
@@ -189,6 +188,7 @@ void convertSequence(const char *path,int len,int zz)
             data[j]._in = filename;
             data[j]._out = filename2;
             t1[j++] = new std::thread(convert,&data[j]);
+			data[j].stats = 0;
 
             count += zz;
             if(j == THREADS || count >= len)
@@ -203,12 +203,56 @@ void convertSequence(const char *path,int len,int zz)
                     if(t1[i] != 0)
                     {
                         t1[i]= 0;
-                        fwrite(data[i].mem,320/8 * Height * 6 + 2 * 15 * (Height / Height),1,f2);
+
+						for (int y = 0; y < Height / CT_DIM; y++)
+						{
+							for (int x = 0; x < Width / 8; x++)
+							{
+								int scrpos = y * CT_DIM * Width / 8 + x;
+								unsigned char *mem = (unsigned char *)data[i].mem + scrpos;
+								int found = -1;
+								for (int kk = 0; kk < CACHES && (found == -1); kk++)
+								{
+									int k = (CacheIdx - kk) & (CACHES - 1);
+									for (int l = 0; l < Width / 8 * (Height - CT_DIM) && (found == -1);l++)
+									{
+										bool fail = false;
+										for (int p = 0; p < 6 && !fail; p++)
+										{
+											for (int i = 0; i < CT_DIM && !fail; i++)
+											{
+												if (mem[i * Width / 8 + p * Width / 8 * Height] != CacheBuffer[l + k * 320 / 8 * Height * 6 + i * Width / 8 + p * Width / 8 * Height]) fail = true;
+											}
+										}
+										if (fail == false)
+										{
+											found = l + k * 320 / 8 * Height * 6;
+										}
+									}
+								}
+								if (found != -1)
+								{
+									data[i].stats++;
+									for (int p = 0; p < 6; p++)
+									{
+										for (int i = 0; i < CT_DIM; i++)
+										{
+											mem[i * Width / 8 + p * Width / 8 * Height] = CacheBuffer[found + i * Width / 8 + p * Width / 8 * Height];
+										}
+									}
+									printf("");
+								}
+							}
+						}
+						fwrite(data[i].mem, 320 / 8 * Height * 6 + 2 * 15 * (Height / Height), 1, f2);
+
+						memccpy(CacheBuffer + CacheIdx * 320 / 8 * Height * 6,data[i].mem,1, 320 / 8 * Height * 6);
                         free(data[i].mem);
 					
 						stats.copied_pattern += data[i].stats;
 						stats.rendered_pattern += Width / CT_DIM * Height / CT_DIM;
 						printf("open file %s , double %ix%i : %i\n", data[i]._in.c_str(), CT_DIM, CT_DIM, data[i].stats);
+						CacheIdx = (CacheIdx + 1) % CACHES;
 					}
                 }
 				for (int i = 0; i < THREADS; i++)
@@ -259,8 +303,6 @@ void process(unsigned char *mem,unsigned char *ham,int w,int h, DATA *Data)
 	blockCodeVert = (unsigned int*)malloc(sizeof(unsigned int) * Width * 3 * (Height - (CT_DIM - 1)));
 //	blockCodeHori = (unsigned int*)malloc(sizeof(unsigned int) * Width / CT_DIM * Height);
 	unsigned short *ham_color = (unsigned short *)(ham + 320 / 8 * Height * 6);
-	COPYBUF *copyBuffer = (COPYBUF *)malloc(sizeof(COPYBUF) * Width / CT_DIM * Height / CT_DIM);
-	memset(copyBuffer,0, sizeof(COPYBUF) * Width / CT_DIM * Height / CT_DIM);
 	unsigned char *mem_tmp = (unsigned char *)malloc(Width * Height * 3);
 
 	doDCT(mem,Width,Height);
@@ -268,7 +310,7 @@ void process(unsigned char *mem,unsigned char *ham,int w,int h, DATA *Data)
 	for (int i = 0; i < Width * Height * 3; i++)
 		mem_tmp[i] = mem[i] >> 4;
 
-	for (int i = 0; i < Width * 3 * (Height - (CT_DIM - 1)); i++) blockCodeVert[i] = getBlockCodeVert(mem_tmp + i);
+/*	for (int i = 0; i < Width * 3 * (Height - (CT_DIM - 1)); i++) blockCodeVert[i] = getBlockCodeVert(mem_tmp + i);
 //	for (int i = 0; i < Width / CT_DIM * Height; i++) blockCodeHori[i] = getBlockCodeVert(mem_tmp + i * 8);
 
 	for (int yy = 0; yy < Height / CT_DIM; yy++)
@@ -298,220 +340,150 @@ void process(unsigned char *mem,unsigned char *ham,int w,int h, DATA *Data)
 			}
 		}
 	}
-
+*/
 	int numOfColors = 0;
-	numOfColors = prepareIndexBuffer(lumlist, r_tab, g_tab, b_tab, ham_color, w, h, mem, copyBuffer);
+	numOfColors = prepareIndexBuffer(lumlist, r_tab, g_tab, b_tab, ham_color, w, h, mem);
 
 
 	int aktsetX = 0;
-	int ra[CT_DIM];
-	int ga[CT_DIM];
-	int ba[CT_DIM];
-	for (int i = 0; i < CT_DIM; i++)
-	{
-		ba[i] = 0;
-		ga[i] = 0;
-		ra[i] = 0;
-	}
-	for(int yy = 0;yy < h / CT_DIM;yy++)
+	int ra = 0;
+	int ga = 0;
+	int ba = 0;
+	for(int y = 0;y < h;y++)
     {
-		unsigned int bit[CT_DIM];
-		for(int i = 0;i < CT_DIM;i++) bit[i] = 7;
+		unsigned char bit = 0x80;
+		unsigned char pl[6] = {0,0,0,0,0,0};
 
-		unsigned char pl[CT_DIM][6];
-		for (int i = 0; i < CT_DIM; i++)
-			for(int j = 0;j < 6;j++) pl[i][j] = 0;
+		ba = 0;
+		ga = 0;
+		ra = 0;
 
-		for (int i = 0; i < CT_DIM; i++)
+		for (int x = 0; x < w; x++)
 		{
-			ba[i] = 0;
-			ga[i] = 0;
-			ra[i] = 0;
-		}
-
-		for (int xx = 0; xx < w / CT_DIM; xx++)
-		{
-			if (copyBuffer[yy * Width / CT_DIM + xx].pre_index != 0)
-			{
-				int pos = copyBuffer[yy * Width / CT_DIM + xx].pre_index - 1;
-				for (int i = 0; i < CT_DIM; i++)
-				{
-					bit[i] -= (1 << CT_DIM_BIT);
-					memcpy(ba, copyBuffer[yy * Width / CT_DIM + xx].ba, sizeof(int) * CT_DIM);
-					memcpy(ra, copyBuffer[yy * Width / CT_DIM + xx].ra, sizeof(int) * CT_DIM);
-					memcpy(ga, copyBuffer[yy * Width / CT_DIM + xx].ga, sizeof(int) * CT_DIM);
-					if (bit[i] == -1)
-					{
-						bit[i] = 7;
-						for (int j = 0; j < 6; j++)
-						{
-#ifdef WIN32
-							ham[320 / 8 * (yy * CT_DIM + i) + xx * CT_DIM / 8 + 320 / 8 * Height * j] = ham[pos + i * Width / 8 + Width / 8 * Height * j];// pl[i][j];// _byteswap_ulong(pl[i][j]);
+			int code = 0;
+#ifdef DITHER
+			bool dith = true;
 #else
-							ham[320 / 8 * y + x / 8 + 320 / 8 * Height * i] = pl[i][j];// __builtin_bswap32(pl[i][j]);
+			bool dith = false;
 #endif
-							pl[i][j] = 0;
-						}
-					}
+
+			int b = (int)((unsigned int)mem[x * 3 + (Height - 1 - y) * 3 * w]);
+			int g = (int)((unsigned int)mem[x * 3 + (Height - 1 - y) * 3 * w + 1]);
+			int r = (int)((unsigned int)mem[x * 3 + (Height - 1 - y) * 3 * w + 2]);
+
+			int rd = abs(ra - r) *(299);// +50 + 25);
+			int gd = abs(ga - g) *(587);// -150);
+			int bd = abs(ba - b) *(114);// +50 + 25);
+
+			int ga_ = ga;
+			int ba_ = ba;
+			int ra_ = ra;
+
+			if (gd >= rd)
+			{
+				if (gd >= bd)
+				{
+					ga_ = g;
+					code = 3;
+				}
+				else
+				{
+					ba_ = b;
+					code = 1;
 				}
 			}
 			else
-			for (int yy_CT_DIM = 0; yy_CT_DIM < CT_DIM; yy_CT_DIM++)
 			{
-				int y = yy_CT_DIM + yy * CT_DIM;
-				for (int xx_CT_DIM = 0; xx_CT_DIM < CT_DIM; xx_CT_DIM++)
+				if (rd >= bd)
 				{
-					int x = xx_CT_DIM + xx * CT_DIM;
-					int code = 0;
-					bool dith = true;
-					int b = (int)((unsigned int)mem[x * 3 + (Height - 1 - y) * 3 * w]);
-					int g = (int)((unsigned int)mem[x * 3 + (Height - 1 - y) * 3 * w + 1]);
-					int r = (int)((unsigned int)mem[x * 3 + (Height - 1 - y) * 3 * w + 2]);
-
-					int rd = abs(ra[yy_CT_DIM] - r) * (299);// +50 + 25);
-					int gd = abs(ga[yy_CT_DIM] - g) * (587);// -150);
-					int bd = abs(ba[yy_CT_DIM] - b) * (114);// +50 + 25);
-
-					int ga_ = ga[yy_CT_DIM];
-					int ba_ = ba[yy_CT_DIM];
-					int ra_ = ra[yy_CT_DIM];
-
-					switch (xx_CT_DIM)
-					{
-					case 0:
-					{
-						ga_ = g;
-						code = 3;
-					}break;
-					case 1:
-					{
-						ra_ = r;
-						code = 2;
-					}break;
-					case 2:
-					{
-						ba_ = b;
-						code = 1;
-					}break;
-					default:
-					{
-						if (gd >= rd)
-						{
-							if (gd >= bd)
-							{
-								ga_ = g;
-								code = 3;
-							}
-							else
-							{
-								ba_ = b;
-								code = 1;
-							}
-						}
-						else
-						{
-							if (rd >= bd)
-							{
-								ra_ = r;
-								code = 2;
-							}
-							else
-							{
-								ba_ = b;
-								code = 1;
-							}
-						}
-					}break;
-					}
-
-					if (aktsetX < numOfColors && lumlist[aktsetX].x == x && lumlist[aktsetX].y == y)
-					{
-						int rd = abs(ra_ - r) * (299);// +50 + 25);
-						int gd = abs(ga_ - g) * (587);// -150);
-						int bd = abs(ba_ - b) * (114);// +50 + 25);
-						float lum0 = 0.299 * (float)rd + 0.587 * (float)gd + 0.114 * (float)bd;
-
-						ra[yy_CT_DIM] = r_tab[lumlist[aktsetX].index - 1];
-						ga[yy_CT_DIM] = g_tab[lumlist[aktsetX].index - 1];
-						ba[yy_CT_DIM] = b_tab[lumlist[aktsetX].index - 1];
-
-						rd = abs(ra[yy_CT_DIM] - r) * (299);// +50 + 25);
-						gd = abs(ga[yy_CT_DIM] - g) * (587);// -150);
-						bd = abs(ba[yy_CT_DIM] - b) * (114);// +50 + 25);
-
-						float lum1 = 0.299 * (float)rd + 0.587 * (float)gd + 0.114 * (float)bd;
-						if (lum0 < lum1)
-						{
-							ra[yy_CT_DIM] = ra_;
-							ga[yy_CT_DIM] = ga_;
-							ba[yy_CT_DIM] = ba_;
-						}
-						else
-						{
-							code = 0;
-							b = lumlist[aktsetX].index << 4;
-							dith = false;
-						}
-
-						aktsetX++;
-					}
-
-					switch (code)
-					{
-					case 0:
-					{
-						int l = 0.299 * (float)ra[yy_CT_DIM] + 0.587 * (float)ga[yy_CT_DIM] + 0.114 * (float)ba[yy_CT_DIM];
-						changeColor(b, x, y, pl[yy_CT_DIM], 1 << bit[yy_CT_DIM], l, dith);
-					}break;
-					case 1:
-					{
-						pl[yy_CT_DIM][4] |= 1 << bit[yy_CT_DIM];
-						int l = 0.299 * (float)ra[yy_CT_DIM] + 0.587 * (float)ga[yy_CT_DIM] + 0.114 * (float)ba[yy_CT_DIM];
-						ba[yy_CT_DIM] = changeColor(b, x, y, pl[yy_CT_DIM], 1 << bit[yy_CT_DIM], l, dith);
-					}break;
-					case 2:
-					{
-						pl[yy_CT_DIM][5] |= 1 << bit[yy_CT_DIM];
-						int l = 0.299 * (float)ra[yy_CT_DIM] + 0.587 * (float)ga[yy_CT_DIM] + 0.114 * (float)ba[yy_CT_DIM];
-						ra[yy_CT_DIM] = changeColor(r, x, y, pl[yy_CT_DIM], 1 << bit[yy_CT_DIM], l, dith);
-					}break;
-					case 3:
-					{
-						pl[yy_CT_DIM][4] |= 1 << bit[yy_CT_DIM];
-						pl[yy_CT_DIM][5] |= 1 << bit[yy_CT_DIM];
-						int l = 0.299 * (float)ra[yy_CT_DIM] + 0.587 * (float)ga[yy_CT_DIM] + 0.114 * (float)ba[yy_CT_DIM];
-						ga[yy_CT_DIM] = changeColor(g, x, y, pl[yy_CT_DIM], 1 << bit[yy_CT_DIM], l, dith);
-					}break;
-					}
-
-					bit[yy_CT_DIM]--;
-					if (bit[yy_CT_DIM] == -1)
-					{
-						bit[yy_CT_DIM] = 7;
-						for (int i = 0; i < 6; i++)
-						{
-#ifdef WIN32
-							ham[320 / 8 * y + x / 8 + 320 / 8 * Height * i] = pl[yy_CT_DIM][i];// _byteswap_ulong(pl[yy_CT_DIM][i]);
-#else
-							ham[320 / 8 * y + x / 8 + 320 / 8 * Height * i] = pl[yy_CT_DIM][i];// __builtin_bswap32(pl[yy_CT_DIM][i]);
-#endif
-							pl[yy_CT_DIM][i] = 0;
-						}
-					}
+					ra_ = r;
+					code = 2;
+				}
+				else
+				{
+					ba_ = b;
+					code = 1;
 				}
 			}
-			memcpy(copyBuffer[yy * Width / CT_DIM + xx].ba, ba, sizeof(int) * CT_DIM);
-			memcpy(copyBuffer[yy * Width / CT_DIM + xx].ra, ra, sizeof(int) * CT_DIM);
-			memcpy(copyBuffer[yy * Width / CT_DIM + xx].ga, ga, sizeof(int) * CT_DIM);
-		}
 
-/*        printf("LuminanzTest line %i (%i):\n",y,numOfColors);
-        for(int i = 0;i < numOfColors;i++)
-            printf("%i (%f) %i\n",lumlist[i].x,lumlist[i].value,lumlist[i].index);
-/**/
+			if (aktsetX < numOfColors && lumlist[aktsetX].x == x && lumlist[aktsetX].y == y)
+			{
+				int rd = abs(ra_ - r) * (299);// +50 + 25);
+				int gd = abs(ga_ - g) * (587);// -150);
+				int bd = abs(ba_ - b) * (114);// +50 + 25);
+				float lum0 = 0.299 * (float)rd + 0.587 * (float)gd + 0.114 * (float)bd;
+
+				ra = r_tab[lumlist[aktsetX].index - 1];
+				ga = g_tab[lumlist[aktsetX].index - 1];
+				ba = b_tab[lumlist[aktsetX].index - 1];
+
+				rd = abs(ra - r) * (299);// +50 + 25);
+				gd = abs(ga - g) * (587);// -150);
+				bd = abs(ba - b) * (114);// +50 + 25);
+
+				float lum1 = 0.299 * (float)rd + 0.587 * (float)gd + 0.114 * (float)bd;
+				if (lum0 < lum1)
+				{
+					ra = ra_;
+					ga = ga_;
+					ba = ba_;
+				}
+				else
+				{
+					code = 0;
+					b = lumlist[aktsetX].index << 4;
+					dith = false;
+				}
+				aktsetX++;
+			}
+
+
+			switch (code)
+			{
+			case 0:
+			{
+				int l = 0.299 * (float)ra + 0.587 * (float)ga + 0.114 * (float)ba;
+				changeColor(b, x, y, pl, bit, l, dith);
+			}break;
+			case 1:
+			{
+				pl[4] |= bit;
+				int l = 0.299 * (float)ra + 0.587 * (float)ga + 0.114 * (float)ba;
+				ba = changeColor(b, x, y, pl, bit, l, dith);
+			}break;
+			case 2:
+			{
+				pl[5] |= bit;
+				int l = 0.299 * (float)ra + 0.587 * (float)ga + 0.114 * (float)ba;
+				ra = changeColor(r, x, y, pl, bit, l, dith);
+			}break;
+			case 3:
+			{
+				pl[4] |= bit;
+				pl[5] |= bit;
+				int l = 0.299 * (float)ra + 0.587 * (float)ga + 0.114 * (float)ba;
+				ga = changeColor(g, x, y, pl, bit, l, dith);
+			}break;
+			}
+
+			bit >>= 1;
+			if (bit == 0)
+			{
+				bit = 0x80;
+				for (int i = 0; i < 6; i++)
+				{
+#ifdef WIN32
+					ham[320 / 8 * y + x / 8 + 320 / 8 * Height * i] = pl[i];// _byteswap_ulong(pl[i]);
+//					ham[(320 / 8 * y + x / 8) * 6 + i] = pl[i];// _byteswap_ulong(pl[i]);
+#else
+					ham[320 / 8 * y + x / 8 + 320 / 8 * Height * i] = pl[i];// __builtin_bswap32(pl[i]);
+#endif
+					pl[i] = 0;
+				}
+			}
+		}
     }
 	if (lumlist) delete [] lumlist;
-	if (copyBuffer) delete copyBuffer;
 	free(mem_tmp);
 	free(blockCodeVert);
 //	free(blockCodeHori);
@@ -535,7 +507,7 @@ int changeColor(int c,int x,int y,unsigned char *pl,unsigned int bit, int lum,bo
     return c;
 }
 
-int prepareIndexBuffer(LUM *lumlist, int *r_tab,int *g_tab,int *b_tab, unsigned short *ham_color,int w,int h,unsigned char *mem, COPYBUF *copyBuffer)
+int prepareIndexBuffer(LUM *lumlist, int *r_tab,int *g_tab,int *b_tab, unsigned short *ham_color,int w,int h,unsigned char *mem)
 {
 	int ra = 0;
 	int ga = 0;
@@ -590,12 +562,27 @@ int prepareIndexBuffer(LUM *lumlist, int *r_tab,int *g_tab,int *b_tab, unsigned 
 	RGB pPalette[15];
 	exq_no_transparency(pExq);
 	exq_feed(pExq, tmprgb_buffer, numOfColors);
-	exq_quantize_hq(pExq, 15);
-	exq_get_palette(pExq, (unsigned char*)pPalette, 15);
+
+	for (int i = 0; i < 15; i++)
+	{
+		pPalette[i].r = (i << 4);
+		pPalette[i].g = (i << 4);
+		pPalette[i].b = (i << 4);
+	}
+	exq_set_palette(pExq, (unsigned char*)pPalette, 15);
+//	exq_quantize_hq(pExq, 15);
+//	exq_get_palette(pExq, (unsigned char*)pPalette, 15);
 	exq_map_image(pExq, numOfColors, tmprgb_buffer, indexbuffer);
 
 	for (int i = 0; i < 15; i++)
 	{
+		pPalette[i].r += 8;
+		pPalette[i].g += 8;
+		pPalette[i].b += 8;
+		if (pPalette[i].r > 255) pPalette[i].r = 255;
+		if (pPalette[i].g > 255) pPalette[i].g = 255;
+		if (pPalette[i].b > 255) pPalette[i].b = 255;
+
 		r_tab[i] = pPalette[i].r;
 		g_tab[i] = pPalette[i].g;
 		b_tab[i] = pPalette[i].b;
@@ -619,8 +606,7 @@ int prepareIndexBuffer(LUM *lumlist, int *r_tab,int *g_tab,int *b_tab, unsigned 
 			lumlist[gg].index = nIndex;
 			lsIndex = nIndex;
 			lsY = lumlist[lumlist_idx[i]].y;
-			if(copyBuffer[lumlist[gg].y / CT_DIM * Width / CT_DIM + lumlist[gg].x / CT_DIM].pre_index == 0)
-				gg++;
+			gg++;
 		}
 	}
 	numOfColors = gg;
@@ -628,7 +614,7 @@ int prepareIndexBuffer(LUM *lumlist, int *r_tab,int *g_tab,int *b_tab, unsigned 
 	{
 		lumlist[i].sortIdx = (lumlist[i].x % CT_DIM) | ((lumlist[i].y % CT_DIM) << 8) | ((lumlist[i].x >> CT_DIM_BIT) << 16) | ((lumlist[i].y >> CT_DIM_BIT) << 24);
 	}
-	for (int i = 0; i < numOfColors - 1; i++)
+/*	for (int i = 0; i < numOfColors - 1; i++)
 	{
 		for (int j = i + 1; j < numOfColors; j++)
 		{
@@ -640,7 +626,7 @@ int prepareIndexBuffer(LUM *lumlist, int *r_tab,int *g_tab,int *b_tab, unsigned 
 			}
 		}
 	}
-
+	*/
 	exq_free(pExq);
 	delete[]tmprgb_buffer;
 	delete[]indexbuffer;
