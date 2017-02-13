@@ -69,41 +69,6 @@ clo:
 	add	#4,a3
 	dbf	d7,clo
 
-	lea Cop1ColorList,a0
-	lea Cop2ColorList,a1
-	lea Cop3ColorList,a2
-	move.l 	#$00dbfffe+((VSTART+7)<<24),d0
-	move.w 	#0,d2
-	move.w 	#(ScreenHeight/COLORED_SCANLINE)-1,d7
-cl2_:
-	swap 	d7
-	move.l 	d0,(a0)+
-	move.l 	d0,(a1)+
-	move.l 	d0,(a2)+
-	lea	Palette+2,a3
-	move.l 	#$01820000,d1
-	move.w 	d2,d3
-	move.w 	#14-1,d7
-cl1_:
-	and.w 	#31,d3
-	move.w 	(a3,d3.w),d1
-	move.l 	d1,(a0)+
-	move.l 	d1,(a1)+
-	move.l 	d1,(a2)+
-	add.l 	#$00020000,d1
-	add.w 	#2,d3
-	dbf 	d7,cl1_
-	and.w 	#31,d3
-	move.w 	(a3,d3),d1
-	add.w 	#2,d3
-	move.l 	d1,(a0)+
-	move.l 	d1,(a1)+
-	move.l 	d1,(a2)+
-	add.l 	#COLORED_SCANLINE<<24,d0
-	add.w 	#2,d2
-	swap 	d7
-	dbf 	d7,cl2_
-
 	move.l 	#_Ham_InnerLoop,a0
 	move.l 	a0,_InterruptSub
 
@@ -165,26 +130,6 @@ RL0:
 	move.l d0,(a0)+
 	dbf 	d7,RL0
 
-	move.l 	a2,a6
-	add.l 	#320/8*ScreenHeight*6,a6
-	move.l 	Copper,a0	
-	add.l 	#Cop1ColorList-Copper1+2,a0
-	move.w 	#ScreenHeight/COLORED_SCANLINE-1,d7
-RL0_1:
-	swap 	d7
-	addq 	#4,a0
-	move.w 	#14-1,d7
-RL0_2:
-	move.w 	(a6)+,d1
-	move.w 	d1,(a0)
-	addq 	#4,a0
-	dbf 	d7,RL0_2
-	move.w 	(a6)+,d1
-	move.w 	d1,(a0)
-	addq 	#4,a0
-	swap 	d7
-	dbf 	d7,RL0_1
-
 
 	move.l 	picindex,d0	
 	addq 	#1,d0
@@ -229,15 +174,14 @@ loadfile:
 	move.l #-1,d3
 	move.l 	picindex,d2
 ;	lsr.l 	#3,d2
-	mulu #(320/8*ScreenHeight*6+15*2*ScreenHeight/COLORED_SCANLINE)/2,d2
-	add.l 	d2,d2
+	mulu #320/8*ScreenHeight*6,d2
 
 ;	lsl.l 	#3,d2
 	jsr -66(a6)			;DOS Read()
 
 	move.l d5,d1			;filehdl
 	move.l #pic,d2		;addr
-	move.l #(320/8*ScreenHeight*6+15*2*ScreenHeight/COLORED_SCANLINE)*1,d7
+	move.l #320/8*ScreenHeight*6,d7
 	move.l d7,d3		;maxlen cap
 	jsr -42(a6)			;DOS Read()
 	cmp.l d7,d0
@@ -263,7 +207,7 @@ DISPW           equ     ScreenWidth
 DISPH           equ     ScreenHeight
 
 ; display window in raster coordinates (HSTART must be odd)
-HSTART          equ     129+(256-ScreenWidth)/2+8
+HSTART          equ     129+(256-ScreenWidth)/2
 VSTART          equ     36 ; +(256-ScreenHeight)/2
 VEND            equ     VSTART+DISPH
 VEND2			equ		14
@@ -280,7 +224,7 @@ Copper1:
 	dc.w	$0100,$0000
 	dc.w	$0100,$0200
 	dc.w	$008e,$2c00+HSTART
-	dc.w	$0090,$2c00+HSTART+ScreenWidth-$100
+	dc.w	$0090,$2c00+HSTART+ScreenWidth-$100+16
 	dc.w	$0092,DFETCHSTART
 	dc.w	$0094,DFETCHSTOP
 	dc.w	$0108,0 ; ScreenWidth/8*(Planes-1)
@@ -337,8 +281,6 @@ ColorCopper1:
 	dc.w	$0106,$0000
 	dc.w	$0007+(VSTART<<8),$fffe
 	dc.w	$0100,(Pl<<12)+MODE
-Cop1ColorList:
-	ds.l 	16*ScreenHeight/COLORED_SCANLINE
 	dc.w	$0007+((VEND&$ff)<<8),$fffe
 	dc.w	$0180,$0000
 	dc.w	$0100,$0000
@@ -351,7 +293,7 @@ Copper2:
 	dc.w	$0100,$0000
 	dc.w	$0100,$0200
 	dc.w	$008e,$2c00+HSTART
-	dc.w	$0090,$2c00+HSTART+ScreenWidth-$100
+	dc.w	$0090,$2c00+HSTART+ScreenWidth-$100+16
 	dc.w	$0092,DFETCHSTART
 	dc.w	$0094,DFETCHSTOP
 	dc.w	$0108,0 ; ScreenWidth/8*(Planes-1)
@@ -408,8 +350,6 @@ ColorCopper2:
 	dc.w	$0106,$0000
 	dc.w	$0007+(VSTART<<8),$fffe
 	dc.w	$0100,(Pl<<12)+MODE
-Cop2ColorList:
-	ds.l 	16*ScreenHeight/COLORED_SCANLINE
 	dc.w	$0007+((VEND&$ff)<<8),$fffe
 	dc.w	$0180,$0000
 	dc.w	$0100,$0000
@@ -422,7 +362,7 @@ Copper3:
 	dc.w	$0100,$0000
 	dc.w	$0100,$0200
 	dc.w	$008e,$2c00+HSTART
-	dc.w	$0090,$2c00+HSTART+ScreenWidth-$100
+	dc.w	$0090,$2c00+HSTART+ScreenWidth-$100+16
 	dc.w	$0092,DFETCHSTART
 	dc.w	$0094,DFETCHSTOP
 	dc.w	$0108,0 ; ScreenWidth/8*(Planes-1)
@@ -479,8 +419,6 @@ ColorCopper3:
 	dc.w	$0106,$0000
 	dc.w	$0007+(VSTART<<8),$fffe
 	dc.w	$0100,(Pl<<12)+MODE
-Cop3ColorList:
-	ds.l 	16*ScreenHeight/COLORED_SCANLINE
 	dc.w	$0007+((VEND&$ff)<<8),$fffe
 	dc.w	$0180,$0000
 	dc.w	$0100,$0000
@@ -547,10 +485,10 @@ picindex:
 	even
 filename:
 ;	dc.b 	"ghost.tmp",0
-	dc.b 	"nvidia.tmp",0
+;	dc.b 	"nvidia.tmp",0
 ;	dc.b 	"darksouls3.tmp",0
 ;	dc.b 	"ray.tmp",0
-;	dc.b 	"cocoon.tmp",0
+	dc.b 	"cocoon.tmp",0
 	even
 pic:
 	ds.b 	(320/8*ScreenHeight*6+15*2*ScreenHeight)*8

@@ -19,7 +19,7 @@
 //#define DITHER
 //#define FFT_CALC
 //#define DCT_CALC
-#define THREADS 8
+#define THREADS 1
 #define CT_DIM_BIT 3
 #define CT_DIM (1 << CT_DIM_BIT)
 
@@ -126,7 +126,7 @@ void convert(void *data);
 void process(unsigned  char *mem, unsigned char *ham, int w, int h, DATA *Data);
 void convertSequence(const char *path,int start, int Len, int zz);
 int changeColor(int c, int x, int y, unsigned char *pl, unsigned int bit, int lum, bool dith);
-int prepareIndexBuffer(LUM *lumlist, int *r_tab, int *g_tab, int *b_tab, unsigned short *ham_color, int w, int h, unsigned char *mem);
+int prepareIndexBuffer(LUM *lumlist, int *r_tab, int *g_tab, int *b_tab, int w, int h, unsigned char *mem);
 void doDCT(unsigned char*mem, int w, int h);
 void doFFT(unsigned char*mem);
 unsigned int getBlockCodeHori(unsigned char *mem);
@@ -137,10 +137,10 @@ int main(int argc, const char * argv[])
 	stats.copied_pattern = 0;
 	stats.rendered_pattern = 0;
 //    convertSequence("ghost",0,3440,2);
-    convertSequence("nvidia",0,4260,2);
+//    convertSequence("nvidia",0,4260,2);
 //	convertSequence("darksouls3",0,3392,2);
 //    convertSequence("ray",3862,2);
-//	convertSequence("cocoon", 0,11161, 2);
+	convertSequence("cocoon", 0,11161, 2);
 //	convertSequence("cocoon", 0,2000, 2);
 	//	convertSequence("cocoon", 6000, 3);
 	//    convertSequence("test",1,2);
@@ -204,7 +204,7 @@ void convertSequence(const char *path,int start,int Len,int zz)
                     {
                         t1[i]= 0;
 
-						for (int y = 0; y < Height / CT_DIM; y++)
+/*						for (int y = 0; y < Height / CT_DIM; y++)
 						{
 							for (int x = 0; x < Width / 8; x++)
 							{
@@ -244,9 +244,9 @@ void convertSequence(const char *path,int start,int Len,int zz)
 								}
 							}
 						}
-						fwrite(data[i].mem, 320 / 8 * Height * 6 + 2 * 15 * (Height / Height), 1, f2);
+	*/					fwrite(data[i].mem, 320 / 8 * Height * 6, 1, f2);
 
-						memccpy(CacheBuffer + CacheIdx * 320 / 8 * Height * 6,data[i].mem,1, 320 / 8 * Height * 6);
+//						memccpy(CacheBuffer + CacheIdx * 320 / 8 * Height * 6,data[i].mem,1, 320 / 8 * Height * 6);
                         free(data[i].mem);
 					
 						stats.copied_pattern += data[i].stats;
@@ -276,8 +276,8 @@ void convert(void *data)
         fseek(f, 0L, SEEK_SET);
 
         unsigned char *mem = (unsigned char*)malloc(sz);
-        Data->mem = (unsigned char*)malloc(320 / 8 * Height * 6 + 2 * 15 * (Height / Height));
-		memset(Data->mem,0, 320 / 8 * Height * 6 + 2 * 15 * (Height / Height));
+        Data->mem = (unsigned char*)malloc(320 / 8 * Height * 6);
+		memset(Data->mem,0, 320 / 8 * Height * 6);
         
         fread(mem,sz,1,f);
         
@@ -302,13 +302,12 @@ void process(unsigned char *mem,unsigned char *ham,int w,int h, DATA *Data)
 	Data->stats = 0;
 	blockCodeVert = (unsigned int*)malloc(sizeof(unsigned int) * Width * 3 * (Height - (CT_DIM - 1)));
 //	blockCodeHori = (unsigned int*)malloc(sizeof(unsigned int) * Width / CT_DIM * Height);
-	unsigned short *ham_color = (unsigned short *)(ham + 320 / 8 * Height * 6);
 	unsigned char *mem_tmp = (unsigned char *)malloc(Width * Height * 3);
 
 	doDCT(mem,Width,Height);
 	doFFT(mem);
 	for (int i = 0; i < Width * Height * 3; i++)
-		mem_tmp[i] = mem[i] >> 4;
+		mem[i] = mem[i] >> 4;
 
 /*	for (int i = 0; i < Width * 3 * (Height - (CT_DIM - 1)); i++) blockCodeVert[i] = getBlockCodeVert(mem_tmp + i);
 //	for (int i = 0; i < Width / CT_DIM * Height; i++) blockCodeHori[i] = getBlockCodeVert(mem_tmp + i * 8);
@@ -342,7 +341,7 @@ void process(unsigned char *mem,unsigned char *ham,int w,int h, DATA *Data)
 	}
 */
 	int numOfColors = 0;
-	numOfColors = prepareIndexBuffer(lumlist, r_tab, g_tab, b_tab, ham_color, w, h, mem);
+	numOfColors = prepareIndexBuffer(lumlist, r_tab, g_tab, b_tab, w, h, mem);
 
 
 	int aktsetX = 0;
@@ -413,9 +412,9 @@ void process(unsigned char *mem,unsigned char *ham,int w,int h, DATA *Data)
 				int bd = abs(ba_ - b) * (114);// +50 + 25);
 				float lum0 = 0.299 * (float)rd + 0.587 * (float)gd + 0.114 * (float)bd;
 
-				ra = r_tab[lumlist[aktsetX].index - 1];
-				ga = g_tab[lumlist[aktsetX].index - 1];
-				ba = b_tab[lumlist[aktsetX].index - 1];
+				ra = r_tab[lumlist[aktsetX].index];
+				ga = g_tab[lumlist[aktsetX].index];
+				ba = b_tab[lumlist[aktsetX].index];
 
 				rd = abs(ra - r) * (299);// +50 + 25);
 				gd = abs(ga - g) * (587);// -150);
@@ -431,7 +430,7 @@ void process(unsigned char *mem,unsigned char *ham,int w,int h, DATA *Data)
 				else
 				{
 					code = 0;
-					b = lumlist[aktsetX].index << 4;
+					b = lumlist[aktsetX].index;// << 4;
 					dith = false;
 				}
 				aktsetX++;
@@ -502,12 +501,12 @@ int changeColor(int c,int x,int y,unsigned char *pl,unsigned int bit, int lum,bo
 	}
 #endif
 //	c = m;
-    m >>= 4;
+  //  m >>= 4;
     for(int i = 0;i < 4;i++) if(m & (1 << i)) pl[i] |= bit;
     return c;
 }
 
-int prepareIndexBuffer(LUM *lumlist, int *r_tab,int *g_tab,int *b_tab, unsigned short *ham_color,int w,int h,unsigned char *mem)
+int prepareIndexBuffer(LUM *lumlist, int *r_tab,int *g_tab,int *b_tab,int w,int h,unsigned char *mem)
 {
 	int ra = 0;
 	int ga = 0;
@@ -547,7 +546,7 @@ int prepareIndexBuffer(LUM *lumlist, int *r_tab,int *g_tab,int *b_tab, unsigned 
 	int			  *lumlist_idx = new int[Height * 320 * 4];
 	for (int i = 0; i < cop; i++)
 	{
-		if (lumlist[i].value > 8)
+		if (lumlist[i].value > 0)
 		{
 			lumlist_idx[numOfColors] = i;
 			tmprgb_buffer[numOfColors * 4] = lumlist[i].r;
@@ -559,47 +558,28 @@ int prepareIndexBuffer(LUM *lumlist, int *r_tab,int *g_tab,int *b_tab, unsigned 
 	}
 
 	exq_data *pExq = exq_init();
-	RGB pPalette[15];
+	RGB pPalette[16];
 	exq_no_transparency(pExq);
 	exq_feed(pExq, tmprgb_buffer, numOfColors);
 
-	for (int i = 0; i < 15; i++)
+	for (int i = 0; i < 16; i++)
 	{
-		pPalette[i].r = (i << 4);
-		pPalette[i].g = (i << 4);
-		pPalette[i].b = (i << 4);
-	}
-	exq_set_palette(pExq, (unsigned char*)pPalette, 15);
-//	exq_quantize_hq(pExq, 15);
-//	exq_get_palette(pExq, (unsigned char*)pPalette, 15);
-	exq_map_image(pExq, numOfColors, tmprgb_buffer, indexbuffer);
-
-	for (int i = 0; i < 15; i++)
-	{
-		pPalette[i].r += 8;
-		pPalette[i].g += 8;
-		pPalette[i].b += 8;
-		if (pPalette[i].r > 255) pPalette[i].r = 255;
-		if (pPalette[i].g > 255) pPalette[i].g = 255;
-		if (pPalette[i].b > 255) pPalette[i].b = 255;
-
+		pPalette[i].r = (i);// << 4);
+		pPalette[i].g = (i);// << 4);
+		pPalette[i].b = (i);// << 4);
 		r_tab[i] = pPalette[i].r;
 		g_tab[i] = pPalette[i].g;
 		b_tab[i] = pPalette[i].b;
-		int r = (r_tab[i]) >> 4;
-		int g = (g_tab[i]) >> 4;
-		int b = (b_tab[i]) >> 4;
-		unsigned short h = (r << 8) | (g << 4) | (b);
-		h = ((h & 0xff) << 8) | ((h & 0xff00) >> 8);
-		ham_color[i] = h;
 	}
+	exq_set_palette(pExq, (unsigned char*)pPalette, 16);
+	exq_map_image(pExq, numOfColors, tmprgb_buffer, indexbuffer);
 
 	int lsIndex = -1;
 	int lsY = -1;
 	int gg = 0;
 	for (int i = 0; i < numOfColors; i++)
 	{
-		int nIndex = indexbuffer[i] + 1;
+		int nIndex = indexbuffer[i];
 		if (lsIndex != nIndex || lsY != lumlist[lumlist_idx[i]].y)
 		{
 			lumlist[gg] = lumlist[lumlist_idx[i]];
@@ -614,19 +594,7 @@ int prepareIndexBuffer(LUM *lumlist, int *r_tab,int *g_tab,int *b_tab, unsigned 
 	{
 		lumlist[i].sortIdx = (lumlist[i].x % CT_DIM) | ((lumlist[i].y % CT_DIM) << 8) | ((lumlist[i].x >> CT_DIM_BIT) << 16) | ((lumlist[i].y >> CT_DIM_BIT) << 24);
 	}
-/*	for (int i = 0; i < numOfColors - 1; i++)
-	{
-		for (int j = i + 1; j < numOfColors; j++)
-		{
-			if (lumlist[j].sortIdx < lumlist[i].sortIdx)
-			{
-				LUM l = lumlist[j];
-				lumlist[j] = lumlist[i];
-				lumlist[i] = l;
-			}
-		}
-	}
-	*/
+
 	exq_free(pExq);
 	delete[]tmprgb_buffer;
 	delete[]indexbuffer;
