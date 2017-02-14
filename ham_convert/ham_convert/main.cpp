@@ -19,7 +19,7 @@
 //#define DITHER
 //#define FFT_CALC
 //#define DCT_CALC
-#define THREADS 1
+#define THREADS 8
 #define CT_DIM_BIT 3
 #define CT_DIM (1 << CT_DIM_BIT)
 
