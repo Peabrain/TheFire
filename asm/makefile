@@ -7,7 +7,7 @@ programm = test
 #OBJ = main.o blitterhelper.o fire.o
 #OBJ = main.o blitterhelper.o ham.o mapping.o fire.o wolfenstein.o ptplayer_noa4.s
 #OBJ = main.o blitterhelper.o ham.o ptplayer_noa4.s
-OBJ = main.o blitterhelper.o hires.o ham.o ptplayer_noa4.s
+OBJ = main.o blitterhelper.o ham8.o ptplayer_noa4.s
 
 VC = vc
 VASM = vasmm68k_mot

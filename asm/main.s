@@ -9,6 +9,7 @@
 	xref	_Fire_Init
 	xref	_Mapping_Init
 	xref	_Ham_Init
+	xref	_Ham8_Init
 	xref	_Hires_Init
 	xref	_Wolfenstein_Init
 	xref	_InterlaceCop
@@ -246,7 +247,8 @@ Effects:
 ; 	dc.l 	_Wolfenstein_Init
 ;	dc.l 	_Fire_Init
 ;	dc.l 	_Mapping_Init
-	dc.l 	_Ham_Init
+;	dc.l 	_Ham_Init
+	dc.l 	_Ham8_Init
 ;	dc.l 	_Hires_Init
 	dc.l 	0
 	EVEN

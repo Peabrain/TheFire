@@ -14,9 +14,20 @@
 #include "fft.h"
 #include "exoquant.h"
 
+#define HAM8
+#define HIRES
+#ifdef HAM8
+#define PLANES 8
+#else
+#define PLANES 6
+#endif
+#ifdef HIRES
+#define Width  640
+#else
 #define Width  320
+#endif
 #define Height  192
-//#define DITHER
+#define DITHER
 //#define FFT_CALC
 //#define DCT_CALC
 #define THREADS 8
@@ -140,10 +151,16 @@ int main(int argc, const char * argv[])
 //    convertSequence("nvidia",0,4260,2);
 //	convertSequence("darksouls3",0,3392,2);
 //    convertSequence("ray",3862,2);
-	convertSequence("cocoon", 0,11161, 2);
+//	convertSequence("cocoon", 0,11161, 1);
 //	convertSequence("cocoon", 0,2000, 2);
 	//	convertSequence("cocoon", 6000, 3);
 	//    convertSequence("test",1,2);
+//	convertSequence("cocoon_hd", 0, 11161, 1);
+//	convertSequence("ghost_hd", 0, 3235, 1);
+//	convertSequence("nvidia_hd", 0, 4260, 1);
+//	convertSequence("cataclysm_hd", 0, 3660, 1);
+//	convertSequence("hots_hd", 0, 2959, 1);
+	convertSequence("sc_hd", 0, 5633, 1);
 
 //	DCT dct;
 //	dct.main();
@@ -156,12 +173,12 @@ int main(int argc, const char * argv[])
 void convertSequence(const char *path,int start,int Len,int zz)
 {
 #define CACHES 4
-	unsigned char CacheBuffer[320 / 8 * Height * 6 * CACHES];
+	unsigned char CacheBuffer[Width / 8 * Height * PLANES * CACHES];
 	int CacheIdx = 0;
 	int len = start + Len;
     char filename2[256];
 
-	memset(CacheBuffer, 0, 320 / 8 * Height * 6 * CACHES);
+	memset(CacheBuffer, 0, Width / 8 * Height * PLANES * CACHES);
     sprintf(filename2,"../asm/%s.tmp",path);
     if(FILE *f2 = fopen(filename2,"w+b"))
     {
@@ -217,23 +234,23 @@ void convertSequence(const char *path,int start,int Len,int zz)
 									for (int l = 0; l < Width / 8 * (Height - CT_DIM) && (found == -1);l++)
 									{
 										bool fail = false;
-										for (int p = 0; p < 6 && !fail; p++)
+										for (int p = 0; p < PLANES && !fail; p++)
 										{
 											for (int i = 0; i < CT_DIM && !fail; i++)
 											{
-												if (mem[i * Width / 8 + p * Width / 8 * Height] != CacheBuffer[l + k * 320 / 8 * Height * 6 + i * Width / 8 + p * Width / 8 * Height]) fail = true;
+												if (mem[i * Width / 8 + p * Width / 8 * Height] != CacheBuffer[l + k * Width / 8 * Height * PLANES + i * Width / 8 + p * Width / 8 * Height]) fail = true;
 											}
 										}
 										if (fail == false)
 										{
-											found = l + k * 320 / 8 * Height * 6;
+											found = l + k * Width / 8 * Height * PLANES;
 										}
 									}
 								}
 								if (found != -1)
 								{
 									data[i].stats++;
-									for (int p = 0; p < 6; p++)
+									for (int p = 0; p < PLANES; p++)
 									{
 										for (int i = 0; i < CT_DIM; i++)
 										{
@@ -244,9 +261,9 @@ void convertSequence(const char *path,int start,int Len,int zz)
 								}
 							}
 						}
-	*/					fwrite(data[i].mem, 320 / 8 * Height * 6, 1, f2);
+	*/					fwrite(data[i].mem, Width / 8 * Height * PLANES, 1, f2);
 
-//						memccpy(CacheBuffer + CacheIdx * 320 / 8 * Height * 6,data[i].mem,1, 320 / 8 * Height * 6);
+//						memccpy(CacheBuffer + CacheIdx * Width / 8 * Height * PLANES,data[i].mem,1, Width / 8 * Height * PLANES);
                         free(data[i].mem);
 					
 						stats.copied_pattern += data[i].stats;
@@ -276,8 +293,8 @@ void convert(void *data)
         fseek(f, 0L, SEEK_SET);
 
         unsigned char *mem = (unsigned char*)malloc(sz);
-        Data->mem = (unsigned char*)malloc(320 / 8 * Height * 6);
-		memset(Data->mem,0, 320 / 8 * Height * 6);
+        Data->mem = (unsigned char*)malloc(Width / 8 * Height * PLANES);
+		memset(Data->mem,0, Width / 8 * Height * PLANES);
         
         fread(mem,sz,1,f);
         
@@ -295,10 +312,16 @@ void process(unsigned char *mem,unsigned char *ham,int w,int h, DATA *Data)
 	unsigned int *blockCodeVert = 0;
 //	unsigned int *blockCodeHori = 0;
 	int colorIndexTab[0x1000];
-	LUM *lumlist = new LUM[320 * Height];
+	LUM *lumlist = new LUM[Width * Height];
+#ifdef HAM8
+	int r_tab[64];
+	int g_tab[64];
+	int b_tab[64];
+#else
 	int r_tab[16];
     int g_tab[16];
     int b_tab[16];
+#endif
 	Data->stats = 0;
 	blockCodeVert = (unsigned int*)malloc(sizeof(unsigned int) * Width * 3 * (Height - (CT_DIM - 1)));
 //	blockCodeHori = (unsigned int*)malloc(sizeof(unsigned int) * Width / CT_DIM * Height);
@@ -306,8 +329,7 @@ void process(unsigned char *mem,unsigned char *ham,int w,int h, DATA *Data)
 
 	doDCT(mem,Width,Height);
 	doFFT(mem);
-	for (int i = 0; i < Width * Height * 3; i++)
-		mem[i] = mem[i] >> 4;
+//	for (int i = 0; i < Width * Height * 3; i++) mem[i] = mem[i] >> 4;
 
 /*	for (int i = 0; i < Width * 3 * (Height - (CT_DIM - 1)); i++) blockCodeVert[i] = getBlockCodeVert(mem_tmp + i);
 //	for (int i = 0; i < Width / CT_DIM * Height; i++) blockCodeHori[i] = getBlockCodeVert(mem_tmp + i * 8);
@@ -351,7 +373,8 @@ void process(unsigned char *mem,unsigned char *ham,int w,int h, DATA *Data)
 	for(int y = 0;y < h;y++)
     {
 		unsigned char bit = 0x80;
-		unsigned char pl[6] = {0,0,0,0,0,0};
+		unsigned char pl[PLANES];
+		for (int i = 0; i < PLANES; i++) pl[i] = 0;
 
 		ba = 0;
 		ga = 0;
@@ -430,7 +453,11 @@ void process(unsigned char *mem,unsigned char *ham,int w,int h, DATA *Data)
 				else
 				{
 					code = 0;
-					b = lumlist[aktsetX].index;// << 4;
+#ifdef HAM8
+					b = lumlist[aktsetX].index << 2;
+#else
+					b = lumlist[aktsetX].index << 4;
+#endif
 					dith = false;
 				}
 				aktsetX++;
@@ -446,20 +473,33 @@ void process(unsigned char *mem,unsigned char *ham,int w,int h, DATA *Data)
 			}break;
 			case 1:
 			{
-				pl[4] |= bit;
+#ifdef HAM8
+				pl[0] |= bit;
+#else
+				pl[PLANES - 2] |= bit;
+#endif
 				int l = 0.299 * (float)ra + 0.587 * (float)ga + 0.114 * (float)ba;
 				ba = changeColor(b, x, y, pl, bit, l, dith);
 			}break;
 			case 2:
 			{
-				pl[5] |= bit;
+#ifdef HAM8
+				pl[1] |= bit;
+#else
+				pl[PLANES - 1] |= bit;
+#endif
 				int l = 0.299 * (float)ra + 0.587 * (float)ga + 0.114 * (float)ba;
 				ra = changeColor(r, x, y, pl, bit, l, dith);
 			}break;
 			case 3:
 			{
-				pl[4] |= bit;
-				pl[5] |= bit;
+#ifdef HAM8
+				pl[0] |= bit;
+				pl[1] |= bit;
+#else
+				pl[PLANES - 2] |= bit;
+				pl[PLANES - 1] |= bit;
+#endif
 				int l = 0.299 * (float)ra + 0.587 * (float)ga + 0.114 * (float)ba;
 				ga = changeColor(g, x, y, pl, bit, l, dith);
 			}break;
@@ -469,13 +509,13 @@ void process(unsigned char *mem,unsigned char *ham,int w,int h, DATA *Data)
 			if (bit == 0)
 			{
 				bit = 0x80;
-				for (int i = 0; i < 6; i++)
+				for (int i = 0; i < PLANES; i++)
 				{
 #ifdef WIN32
-					ham[320 / 8 * y + x / 8 + 320 / 8 * Height * i] = pl[i];// _byteswap_ulong(pl[i]);
-//					ham[(320 / 8 * y + x / 8) * 6 + i] = pl[i];// _byteswap_ulong(pl[i]);
+					ham[Width / 8 * y + x / 8 + Width / 8 * Height * i] = pl[i];// _byteswap_ulong(pl[i]);
+//					ham[(Width / 8 * y + x / 8) * PLANES + i] = pl[i];// _byteswap_ulong(pl[i]);
 #else
-					ham[320 / 8 * y + x / 8 + 320 / 8 * Height * i] = pl[i];// __builtin_bswap32(pl[i]);
+					ham[Width / 8 * y + x / 8 + Width / 8 * Height * i] = pl[i];// __builtin_bswap32(pl[i]);
 #endif
 					pl[i] = 0;
 				}
@@ -493,16 +533,32 @@ int changeColor(int c,int x,int y,unsigned char *pl,unsigned int bit, int lum,bo
 #ifdef DITHER
 	if (dith)
 	{
-		int p = ((m) & 0x0e) >> 1;
-		if (matrix[p] & (1 << (((x) & 3) + (y & 3) * 4))) { m += 16; }
+		int p = ((m) & 0x03) << 2;
+		if (matrix[p] & (1 << (((x) & 3) + (y & 3) * 4)))
+		{
+#ifdef HAM8
+			m += 2;
+#else
+			m += 16;
+#endif
+		}
 		if (m > 255) m = 255;
 		if (m < 0) m = 0;
 		c = m;
 	}
+	else
+		c = m & 0xfc;
 #endif
 //	c = m;
-  //  m >>= 4;
-    for(int i = 0;i < 4;i++) if(m & (1 << i)) pl[i] |= bit;
+	m >>= (2 + 8 - PLANES);
+	for (int i = 0; i < PLANES - 2; i++)
+	{
+#ifdef HAM8
+		if (m & (1 << i)) pl[i + 2] |= bit;
+#else
+		if (m & (1 << i)) pl[i] |= bit;
+#endif
+	}
     return c;
 }
 
@@ -513,7 +569,7 @@ int prepareIndexBuffer(LUM *lumlist, int *r_tab,int *g_tab,int *b_tab,int w,int 
 	int ba = 0;
 	int cop = 0;
 	int numOfColors = 0;
-	memset(lumlist, 0, sizeof(LUM) * 320 * Height);
+	memset(lumlist, 0, sizeof(LUM) * Width * Height);
 	for (int yy = 0; yy < Height; yy++)
 	{
 		ra = 0;
@@ -541,12 +597,12 @@ int prepareIndexBuffer(LUM *lumlist, int *r_tab,int *g_tab,int *b_tab,int w,int 
 		}
 	}
 
-	unsigned char *tmprgb_buffer = new unsigned char[Height * 320 * 4];
-	unsigned char *indexbuffer = new unsigned char[Height * 320 * 4];
-	int			  *lumlist_idx = new int[Height * 320 * 4];
+	unsigned char *tmprgb_buffer = new unsigned char[Height * Width * 4];
+	unsigned char *indexbuffer = new unsigned char[Height * Width * 4];
+	int			  *lumlist_idx = new int[Height * Width * 4];
 	for (int i = 0; i < cop; i++)
 	{
-		if (lumlist[i].value > 0)
+		if (lumlist[i].value > 8)
 		{
 			lumlist_idx[numOfColors] = i;
 			tmprgb_buffer[numOfColors * 4] = lumlist[i].r;
@@ -558,20 +614,34 @@ int prepareIndexBuffer(LUM *lumlist, int *r_tab,int *g_tab,int *b_tab,int w,int 
 	}
 
 	exq_data *pExq = exq_init();
-	RGB pPalette[16];
 	exq_no_transparency(pExq);
 	exq_feed(pExq, tmprgb_buffer, numOfColors);
-
+#ifdef HAM8
+	RGB pPalette[64];
+	for (int i = 0; i < 64; i++)
+	{
+		pPalette[i].r = (i << 2);
+		pPalette[i].g = (i << 2);
+		pPalette[i].b = (i << 2);
+		r_tab[i] = pPalette[i].r;
+		g_tab[i] = pPalette[i].g;
+		b_tab[i] = pPalette[i].b;
+	}
+	exq_set_palette(pExq, (unsigned char*)pPalette, 64);
+#else
+	RGB pPalette[16];
 	for (int i = 0; i < 16; i++)
 	{
-		pPalette[i].r = (i);// << 4);
-		pPalette[i].g = (i);// << 4);
-		pPalette[i].b = (i);// << 4);
+		pPalette[i].r = (i << 4);
+		pPalette[i].g = (i << 4);
+		pPalette[i].b = (i << 4);
 		r_tab[i] = pPalette[i].r;
 		g_tab[i] = pPalette[i].g;
 		b_tab[i] = pPalette[i].b;
 	}
 	exq_set_palette(pExq, (unsigned char*)pPalette, 16);
+#endif
+
 	exq_map_image(pExq, numOfColors, tmprgb_buffer, indexbuffer);
 
 	int lsIndex = -1;
