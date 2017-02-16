@@ -208,7 +208,7 @@ DISPW           equ     ScreenWidth/2
 DISPH           equ     ScreenHeight
 
 ; display window in raster coordinates (HSTART must be odd)
-HSTART          equ     129+(256-DISPW)/4-64
+HSTART          equ     129+(256-DISPW)/4
 HEND 	        equ     HSTART+DISPW+32-$100
 VSTART          equ     36+(256-ScreenHeight)/2
 VEND            equ     VSTART+DISPH-24
