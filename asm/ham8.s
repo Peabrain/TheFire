@@ -1,4 +1,4 @@
-ScreenWidth = 640
+ScreenWidth = 704
 ScreenHeight= 192
 Planes= 8
 Pl=0
@@ -9,6 +9,7 @@ Pl=0
 	xdef	_Ham8_Init
 	xref	_InterruptSub
 	xref	_loadNext	
+	xref	_Frames
 	xref	pDOSBase	
 
 	section	ham8,CODE_P
@@ -71,6 +72,8 @@ _Ham8_Init:
 	move.l 	#_Ham8_InnerLoop,a0
 	move.l 	a0,_InterruptSub
 
+	move.l	_Frames,d0
+	move.l 	d0,lastframe
 	rts
 ;---------------------------------
 _Ham8_Deinit:
@@ -81,7 +84,21 @@ _Ham8_InnerLoop:
 
 ;	move.w 	#$fff,$dff180
 
+	move.l	_Frames,d0
+	move.l	d0,d1
+	sub.l 	lastframe,d1
+	cmp.l	#2,d1
+	blt.b 	.norender
+	add.l 	#2,lastframe
+
+	
 	bsr	RenderLoop
+
+	move.l	Screens,a0
+	add.l	#ScreenWidth/8*ScreenHeight*7,a0
+;	move.l	#$ffffffff,(a0)
+	add.l	#ScreenWidth/8-4,a0
+;	move.l	#$ffffffff,(a0)
 
 ;	move.w 	#$0,$dff180
 
@@ -91,6 +108,8 @@ _Ham8_InnerLoop:
 	bsr	Switch
 	move.l	Copper+8,$dff080
 
+.norender:
+	
 ;	bsr BlitWait
 ;	move.w	_BlitListEnd+2,_BlitListEnd
 ;	jsr	_StartBlitList
@@ -181,6 +200,7 @@ loadfile:
 	jsr -66(a6)			;DOS Read()
 
 	move.l d5,d1			;filehdl
+;	move.l Screens,d2
 	move.l #pic,d2		;addr
 	move.l #ScreenWidth/8*ScreenHeight*8,d7
 	move.l d7,d3		;maxlen cap
@@ -208,10 +228,10 @@ DISPW           equ     ScreenWidth/2
 DISPH           equ     ScreenHeight
 
 ; display window in raster coordinates (HSTART must be odd)
-HSTART          equ     129+(256-DISPW)/4
+HSTART          equ     129+(256-DISPW)/4-32
 HEND 	        equ     HSTART+DISPW+32-$100
-VSTART          equ     36+(256-ScreenHeight)/2
-VEND            equ     VSTART+DISPH-24
+VSTART          equ     36+(256-ScreenHeight)/2-8
+VEND            equ     VSTART+DISPH
 VEND2			equ		14
 
 ; normal display data fetch start/stop (without scrolling)
@@ -791,6 +811,8 @@ filehandle:
 	dc.l 	0
 picindex:
 	dc.l 	0
+lastframe:
+	dc.l	0
 	even
 filename:
 ;	dc.b 	"cocoon_hd.tmp",0

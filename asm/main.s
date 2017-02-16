@@ -174,7 +174,7 @@ IntLevel3:
 ;	beq.b 	.ll
 ;	jsr		(a0)
 .ll:
-	add.w	#1,_Frames
+	add.l	#1,_Frames
 	move.w	#$0020,$dff09c
 	move.w	#$0020,$dff09c
 	bra.w	IntLevel3_end
@@ -225,7 +225,7 @@ org_dmacon:
 	dc.w	0
 org_int3:
 	dc.l	0
-_Frames:	dc.w	0
+_Frames:	dc.l	0
 AEnd: 	dc.w 	0
 	even
 _InterlaceCop:

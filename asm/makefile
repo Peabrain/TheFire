@@ -13,7 +13,6 @@ VC = vc
 VASM = vasmm68k_mot
 test.exe: $(OBJ) test.c
 	$(VC) +kick13 -O2 -notmpfile -nostdlib -o $(programm).exe $(OBJ) test.c
-
 %.o: %.s
 	$(VASM) -m68000 -spaces -Fhunk -phxass -x $< -o $@
 

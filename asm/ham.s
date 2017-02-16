@@ -124,11 +124,11 @@ RenderLoop:
 ;	lsl.l 	#2,d3
 ;	add.l 	(a3,d3.w),a2
 	move.l 	a2,a1
-	move.w 	#ScreenWidth/32*ScreenHeight*6-1,d7
-RL0:
-	move.l (a1)+,d0
-	move.l d0,(a0)+
-	dbf 	d7,RL0
+;	move.w 	#ScreenWidth/32*ScreenHeight*6-1,d7
+;RL0:
+;	move.l (a1)+,d0
+;	move.l d0,(a0)+
+;	dbf 	d7,RL0
 
 
 	move.l 	picindex,d0	
@@ -180,7 +180,8 @@ loadfile:
 	jsr -66(a6)			;DOS Read()
 
 	move.l d5,d1			;filehdl
-	move.l #pic,d2		;addr
+	move.l Screens,d2
+;	move.l #pic,d2		;addr
 	move.l #320/8*ScreenHeight*6,d7
 	move.l d7,d3		;maxlen cap
 	jsr -42(a6)			;DOS Read()
@@ -488,8 +489,9 @@ filename:
 ;	dc.b 	"nvidia.tmp",0
 ;	dc.b 	"darksouls3.tmp",0
 ;	dc.b 	"ray.tmp",0
-	dc.b 	"cocoon.tmp",0
+;	dc.b 	"cocoon.tmp",0
+	dc.b 	"sc.tmp",0
 	even
 pic:
-	ds.b 	(320/8*ScreenHeight*6+15*2*ScreenHeight)*8
+	ds.b 	(320/8*ScreenHeight*6+15*2*ScreenHeight)
 *********************************************************************
