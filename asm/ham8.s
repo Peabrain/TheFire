@@ -10,6 +10,7 @@ Pl=0
 	xref	_InterruptSub
 	xref	_loadNext	
 	xref	_Frames
+	xref	AEnd
 	xref	pDOSBase	
 
 	section	ham8,CODE_P
@@ -175,7 +176,7 @@ LoadMySndFile:
 	
 	move.l 	picindex,d0
 	mulu	#884,d0
-	add.l 	#13000,d0
+	add.l 	#8000,d0
 	move.l 	d0,fileseek
 
 	move.l #884*2,d0
@@ -259,6 +260,7 @@ loadfile:
 ;	move.w 	#$f00,ColorCopper1+2
 	bsr 	closefile
 	move.l 	#0,picindex
+	move.w 	#1,AEnd
 	rts
 ;--------------------------------------------------------------------	
 PlaySample:
@@ -279,8 +281,8 @@ PlaySample:
 	move.w  #22096/2,AUD1LEN(a0)  ;Set length in words
 	move.w  #48,AUD0VOL(a0) ;Use maximum volume
 	move.w  #48,AUD1VOL(a0) ;Use maximum volume
-	move.w  #162,AUD0PER(a0)
-	move.w  #162,AUD1PER(a0)
+	move.w  #161,AUD0PER(a0)
+	move.w  #161,AUD1PER(a0)
 	move.w  #(DMAF_SETCLR!DMAF_AUD0!DMAF_AUD1!DMAF_MASTER),DMACON(a0)
 
 	rts                     ; Return to main code...
@@ -292,7 +294,7 @@ DISPW           equ     ScreenWidth/2
 DISPH           equ     ScreenHeight
 
 ; display window in raster coordinates (HSTART must be odd)
-HSTART          equ     129+(256-DISPW)/4-32
+HSTART          equ     129+(256-DISPW)/4-64
 HEND 	        equ     HSTART+DISPW+32-$100
 VSTART          equ     36+(256-ScreenHeight)/2-8
 VEND            equ     VSTART+DISPH
@@ -307,13 +309,35 @@ MODE 			equ		HAM+COLORBURST+HIRES+$11
 Copper1:
 	dc.w	$01fc,$4003
 	dc.w	$0180,$0000
+
+	dc.w	$0007+((VSTART-18)<<8),$fffe
+	dc.w	$0180,$044f
+	dc.w	$0007+((VSTART-17)<<8),$fffe
+	dc.w	$0180,$033f
+	dc.w	$0007+((VSTART-16)<<8),$fffe
+	dc.w	$0180,$022f
+	dc.w	$0007+((VSTART-15)<<8),$fffe
+	dc.w	$0180,$011f
+	dc.w	$0007+((VSTART-14)<<8),$fffe
+	dc.w	$0180,$000f
+
+	dc.w	$0007+((VSTART-8)<<8),$fffe
+	dc.w	$0180,$011f
+	dc.w	$0007+((VSTART-7)<<8),$fffe
+	dc.w	$0180,$022f
+	dc.w	$0007+((VSTART-6)<<8),$fffe
+	dc.w	$0180,$033f
+	dc.w	$0007+((VSTART-5)<<8),$fffe
+	dc.w	$0180,$044f
+	dc.w	$0007+((VSTART-4)<<8),$fffe
+	dc.w	$0180,$0000
 	dc.w	$008e,$2c00+HSTART
 	dc.w	$0090,$2c00+HEND
 	dc.w	$0092,DFETCHSTART
 	dc.w	$0094,DFETCHSTOP
 	dc.w	$0108,0 ; ScreenWidth/8*(Planes-1)
 	dc.w	$010a,0 ; ScreenWidth/8*(Planes-1)
-	dc.w	$0102,$0000
+	dc.w	$0102,$0044
 	dc.w	$0104,$0200
 Bitplane1:
 	dc.w	$00e0,$0000
@@ -470,25 +494,67 @@ ColorCopper1:
 	dc.w	$0106,$0020
 	dc.w	$0007+(VSTART<<8),$fffe
 	dc.w	$0100,(Pl<<12)+MODE
-;	dc.w 	$ffdf,$fffe
 	dc.w	$0007+((VEND&$ff)<<8),$fffe
 	dc.w	$0180,$0000
 	dc.w	$0100,$0000
+
+	dc.w 	$ffdf,$fffe
+	dc.w	$0007+(((VEND+4)&$ff)<<8),$fffe
+	dc.w	$0180,$044f
+	dc.w	$0007+(((VEND+5)&$ff)<<8),$fffe
+	dc.w	$0180,$033f
+	dc.w	$0007+(((VEND+6)&$ff)<<8),$fffe
+	dc.w	$0180,$022f
+	dc.w	$0007+(((VEND+7)&$ff)<<8),$fffe
+	dc.w	$0180,$011f
+	dc.w	$0007+(((VEND+8)&$ff)<<8),$fffe
+	dc.w	$0180,$000f
+	dc.w	$0007+(((VEND+4+25)&$ff)<<8),$fffe
+	dc.w	$0180,$011f
+	dc.w	$0007+(((VEND+4+26)&$ff)<<8),$fffe
+	dc.w	$0180,$022f
+	dc.w	$0007+(((VEND+4+27)&$ff)<<8),$fffe
+	dc.w	$0180,$033f
+	dc.w	$0007+(((VEND+4+28)&$ff)<<8),$fffe
+	dc.w	$0180,$044f
+	dc.w	$0007+(((VEND+4+29)&$ff)<<8),$fffe
+	dc.w	$0180,$0000
 	dc.w	$ffff,$fffe
 
 ;-----------
 Copper2:
 	dc.w	$01fc,$4003
 	dc.w	$0180,$0000
-	dc.w	$0100,$0000
-	dc.w	$0100,$0200
+
+	dc.w	$0007+((VSTART-18)<<8),$fffe
+	dc.w	$0180,$044f
+	dc.w	$0007+((VSTART-17)<<8),$fffe
+	dc.w	$0180,$033f
+	dc.w	$0007+((VSTART-16)<<8),$fffe
+	dc.w	$0180,$022f
+	dc.w	$0007+((VSTART-15)<<8),$fffe
+	dc.w	$0180,$011f
+	dc.w	$0007+((VSTART-14)<<8),$fffe
+	dc.w	$0180,$000f
+
+	dc.w	$0007+((VSTART-8)<<8),$fffe
+	dc.w	$0180,$011f
+	dc.w	$0007+((VSTART-7)<<8),$fffe
+	dc.w	$0180,$022f
+	dc.w	$0007+((VSTART-6)<<8),$fffe
+	dc.w	$0180,$033f
+	dc.w	$0007+((VSTART-5)<<8),$fffe
+	dc.w	$0180,$044f
+	dc.w	$0007+((VSTART-4)<<8),$fffe
+	dc.w	$0180,$0000
+
 	dc.w	$008e,$2c00+HSTART
 	dc.w	$0090,$2c00+HEND
 	dc.w	$0092,DFETCHSTART
 	dc.w	$0094,DFETCHSTOP
 	dc.w	$0108,0 ; ScreenWidth/8*(Planes-1)
 	dc.w	$010a,0 ; ScreenWidth/8*(Planes-1)
-	dc.w	$0102,$0000
+	dc.w	$0102,$0044
 	dc.w	$0104,$0200
 Bitplane2:
 	dc.w	$00e0,$0000
@@ -645,25 +711,67 @@ ColorCopper2:
 	dc.w	$0106,$0020
 	dc.w	$0007+(VSTART<<8),$fffe
 	dc.w	$0100,(Pl<<12)+MODE
-;	dc.w 	$ffdf,$fffe
 	dc.w	$0007+((VEND&$ff)<<8),$fffe
 	dc.w	$0180,$0000
 	dc.w	$0100,$0000
+
+	dc.w 	$ffdf,$fffe
+	dc.w	$0007+(((VEND+4)&$ff)<<8),$fffe
+	dc.w	$0180,$044f
+	dc.w	$0007+(((VEND+5)&$ff)<<8),$fffe
+	dc.w	$0180,$033f
+	dc.w	$0007+(((VEND+6)&$ff)<<8),$fffe
+	dc.w	$0180,$022f
+	dc.w	$0007+(((VEND+7)&$ff)<<8),$fffe
+	dc.w	$0180,$011f
+	dc.w	$0007+(((VEND+8)&$ff)<<8),$fffe
+	dc.w	$0180,$000f
+	dc.w	$0007+(((VEND+4+25)&$ff)<<8),$fffe
+	dc.w	$0180,$011f
+	dc.w	$0007+(((VEND+4+26)&$ff)<<8),$fffe
+	dc.w	$0180,$022f
+	dc.w	$0007+(((VEND+4+27)&$ff)<<8),$fffe
+	dc.w	$0180,$033f
+	dc.w	$0007+(((VEND+4+28)&$ff)<<8),$fffe
+	dc.w	$0180,$044f
+	dc.w	$0007+(((VEND+4+29)&$ff)<<8),$fffe
+	dc.w	$0180,$0000
 	dc.w	$ffff,$fffe
 
 ;-----------
 Copper3:
 	dc.w	$01fc,$4003
 	dc.w	$0180,$0000
-	dc.w	$0100,$0000
-	dc.w	$0100,$0200
+
+	dc.w	$0007+((VSTART-18)<<8),$fffe
+	dc.w	$0180,$044f
+	dc.w	$0007+((VSTART-17)<<8),$fffe
+	dc.w	$0180,$033f
+	dc.w	$0007+((VSTART-16)<<8),$fffe
+	dc.w	$0180,$022f
+	dc.w	$0007+((VSTART-15)<<8),$fffe
+	dc.w	$0180,$011f
+	dc.w	$0007+((VSTART-14)<<8),$fffe
+	dc.w	$0180,$000f
+
+	dc.w	$0007+((VSTART-8)<<8),$fffe
+	dc.w	$0180,$011f
+	dc.w	$0007+((VSTART-7)<<8),$fffe
+	dc.w	$0180,$022f
+	dc.w	$0007+((VSTART-6)<<8),$fffe
+	dc.w	$0180,$033f
+	dc.w	$0007+((VSTART-5)<<8),$fffe
+	dc.w	$0180,$044f
+	dc.w	$0007+((VSTART-4)<<8),$fffe
+	dc.w	$0180,$0000
+
 	dc.w	$008e,$2c00+HSTART
 	dc.w	$0090,$2c00+HEND
 	dc.w	$0092,DFETCHSTART
 	dc.w	$0094,DFETCHSTOP
 	dc.w	$0108,0 ; ScreenWidth/8*(Planes-1)
 	dc.w	$010a,0 ; ScreenWidth/8*(Planes-1)
-	dc.w	$0102,$0000
+	dc.w	$0102,$0044
 	dc.w	$0104,$0200
 Bitplane3:
 	dc.w	$00e0,$0000
@@ -820,10 +928,31 @@ ColorCopper3:
 	dc.w	$0106,$0020
 	dc.w	$0007+(VSTART<<8),$fffe
 	dc.w	$0100,(Pl<<12)+MODE
-;	dc.w 	$ffdf,$fffe
 	dc.w	$0007+((VEND&$ff)<<8),$fffe
 	dc.w	$0180,$0000
 	dc.w	$0100,$0000
+
+	dc.w 	$ffdf,$fffe
+	dc.w	$0007+(((VEND+4)&$ff)<<8),$fffe
+	dc.w	$0180,$044f
+	dc.w	$0007+(((VEND+5)&$ff)<<8),$fffe
+	dc.w	$0180,$033f
+	dc.w	$0007+(((VEND+6)&$ff)<<8),$fffe
+	dc.w	$0180,$022f
+	dc.w	$0007+(((VEND+7)&$ff)<<8),$fffe
+	dc.w	$0180,$011f
+	dc.w	$0007+(((VEND+8)&$ff)<<8),$fffe
+	dc.w	$0180,$000f
+	dc.w	$0007+(((VEND+4+25)&$ff)<<8),$fffe
+	dc.w	$0180,$011f
+	dc.w	$0007+(((VEND+4+26)&$ff)<<8),$fffe
+	dc.w	$0180,$022f
+	dc.w	$0007+(((VEND+4+27)&$ff)<<8),$fffe
+	dc.w	$0180,$033f
+	dc.w	$0007+(((VEND+4+28)&$ff)<<8),$fffe
+	dc.w	$0180,$044f
+	dc.w	$0007+(((VEND+4+29)&$ff)<<8),$fffe
+	dc.w	$0180,$0000
 	dc.w	$ffff,$fffe
 
 *********************************************************************

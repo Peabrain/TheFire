@@ -14,6 +14,7 @@
 	xref	_Wolfenstein_Init
 	xref	_InterlaceCop
 	xref 	_InterlaceFlag
+	xref	AEnd
 	xref 	mt_init
 	xref 	mt_install_cia
 	xref 	mt_remove_cia
