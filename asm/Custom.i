@@ -241,6 +241,11 @@ BPLHPTL	= $1ee		; AGA: VRam (UHRES) bitplane pointer (low 15 bits)
 FMODE	= $1fc		; AGA: Write Fetch mode (0=OCS compatible)
 NOOP	= $1fe		; No operation
 
+DMAF_SETCLR = $8000
+DMAF_AUD1 	= $0002
+DMAF_AUD0 	= $0001
+DMAF_MASTER	= $0200
+
 HIRES 	= $8000
 HAM  	= $0800
 LACE  	= $0004

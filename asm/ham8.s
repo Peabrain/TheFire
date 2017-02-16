@@ -74,6 +74,8 @@ _Ham8_Init:
 
 	move.l	_Frames,d0
 	move.l 	d0,lastframe
+	
+	bsr 	PlaySample
 	rts
 ;---------------------------------
 _Ham8_Deinit:
@@ -131,40 +133,84 @@ Switch:
 ;--------------------------------------------------------------------	
 RenderLoop:
 
-	bsr 	loadfile
+	bsr 	LoadMyVidFile
 	
 	move.l 	Screens,a3
 	lea 	pic,a2
 	move.l 	picindex,d0	
-;	lea 	picoffsets,a3
-;	move.l 	d0,d3
-;	and.l 	#7,d3
-;	lsl.l 	#2,d3
-;	add.l 	(a3,d3.w),a2
 	move.l 	a2,a1
 	move.l	a3,a0
 	move.w 	#ScreenWidth/32*ScreenHeight*8-1,d7
 RL0:
-	move.l (a1)+,d0
-	move.l d0,(a0)+
-	dbf 	d7,RL0
-	
+;	move.l (a1)+,d0
+;	move.l d0,(a0)+
+;	dbf 	d7,RL0
+
+	bsr 	LoadMySndFile
+
+	lea 	pic,a0
+	move.l	SndPos,d0
+	lea		SoundData,a1
+	move.w 	#221-1,d7
+RL1:
+	move.l (a0)+,d1
+	move.l d1,(a1,d0)
+	add.l 	#4,d0
+	cmp.l	#22096,d0
+	bne.b	.mm
+	moveq	#0,d0
+.mm:
+	dbf 	d7,RL1
+	move.l	d0,SndPos
+
 	move.l 	picindex,d0	
 	addq 	#1,d0
-;	cmp.l 	#1720,d0 ; Ghost
-;	cmp.l 	#2130,d0 ; NVidia
-;	cmp.l 	#1696,d0 ; DarkSouls3
-;	bne.b RL_no1
-;	move.l 	#0,d0
-;RL_no1:
 	move.l 	d0,picindex
 
+	rts
+;--------------------------------------------------------------------	
+LoadMySndFile:
+	move.l 	#filenameSnd,d0
+	move.l	d0,filenameptr
+	
+	move.l 	picindex,d0
+	mulu	#884,d0
+	add.l 	#13000,d0
+	move.l 	d0,fileseek
+
+	move.l #884*2,d0
+	move.l d0,filesize
+
+	move.l	#pic,d0
+	move.l	d0,filedest
+	
+	bsr		loadfile
+	rts
+;--------------------------------------------------------------------	
+LoadMyVidFile:
+	move.l 	#filenameVid,d0
+	move.l	d0,filenameptr
+	
+	move.l 	picindex,d0
+	mulu #ScreenWidth/8*ScreenHeight*2,d0
+	add.l 	d0,d0
+	add.l 	d0,d0
+	move.l 	d0,fileseek
+
+	move.l #ScreenWidth/8*ScreenHeight*8,d0
+	move.l d0,filesize
+
+;	move.l	#pic,d0
+	move.l	Screens,d0
+	move.l	d0,filedest
+	
+	bsr		loadfile
 	rts
 ;--------------------------------------------------------------------	
 openfile:
 	move.l	pDOSBase,a6	;gimme dos in a6
 	moveq #0,d6			;filesize or 0 if not ok
-	move.l #filename,d1
+	move.l filenameptr,d1
 	move.l #1005,d2		;mode_old - file must exist
 	jsr -30(a6)			;DOS Open()
 	move.l 	d0,filehandle
@@ -190,19 +236,13 @@ loadfile:
 ;-66 : Seek(file,position,offset)(D1/D2/D3)
 	move.l d5,d1			;filehdl
 	move.l #-1,d3
-	move.l 	picindex,d2
-;	lsr.l 	#3,d2
-	mulu #ScreenWidth/8*ScreenHeight*2,d2
-	add.l 	d2,d2
-	add.l 	d2,d2
-
-;	lsl.l 	#3,d2
-	jsr -66(a6)			;DOS Read()
+	move.l 	fileseek,d2
+	jsr -66(a6)			;DOS Seek()
 
 	move.l d5,d1			;filehdl
 ;	move.l Screens,d2
-	move.l #pic,d2		;addr
-	move.l #ScreenWidth/8*ScreenHeight*8,d7
+	move.l filedest,d2		;addr
+	move.l filesize,d7
 	move.l d7,d3		;maxlen cap
 	jsr -42(a6)			;DOS Read()
 	cmp.l d7,d0
@@ -220,6 +260,30 @@ loadfile:
 	bsr 	closefile
 	move.l 	#0,picindex
 	rts
+;--------------------------------------------------------------------	
+PlaySample:
+	
+	lea     CUSTOM,a0       ; Custom chip base address
+	lea     SoundData,a1 ;Address of data to
+							;  audio location register 0
+
+	move.l  a1,AUD0LCH(a0)  ;The 680x0 writes this as though it were a
+							;  32-bit register at the low-bits location
+							;  (common to all locations and pointer
+							;  registers in the system).
+	move.l  a1,AUD1LCH(a0)  ;The 680x0 writes this as though it were a
+							;  32-bit register at the low-bits location
+							;  (common to all locations and pointer
+							;  registers in the system).
+	move.w  #22096/2,AUD0LEN(a0)  ;Set length in words
+	move.w  #22096/2,AUD1LEN(a0)  ;Set length in words
+	move.w  #48,AUD0VOL(a0) ;Use maximum volume
+	move.w  #48,AUD1VOL(a0) ;Use maximum volume
+	move.w  #162,AUD0PER(a0)
+	move.w  #162,AUD1PER(a0)
+	move.w  #(DMAF_SETCLR!DMAF_AUD0!DMAF_AUD1!DMAF_MASTER),DMACON(a0)
+
+	rts                     ; Return to main code...
 ;--------------------------------------------------------------------	
 	SECTION	chip,DATA_C
 ;-----------
@@ -766,6 +830,8 @@ ColorCopper3:
 	section mem,BSS_C
 ChipMemory:
 	ds.b	ScreenWidth/8*ScreenHeight*Planes*3
+SoundData:                       ; Audio data must be in Chip memory
+	ds.b	22096
 ;--------------------------------------------------------------------
 	section	data,DATA_P
 Copper:
@@ -807,20 +873,27 @@ Palette:
 	dc.w	$0fff
 	dc.w	$0fff
 
+SndPos:
+	dc.l	884*8
 filehandle:
 	dc.l 	0
 picindex:
 	dc.l 	0
 lastframe:
 	dc.l	0
-	even
-filename:
-;	dc.b 	"cocoon_hd.tmp",0
-;	dc.b 	"ghost_hd.tmp",0
-;	dc.b 	"nvidia_hd.tmp",0
-;	dc.b 	"cataclysm_hd.tmp",0
-;	dc.b 	"hots_hd.tmp",0
+filenameptr:
+	dc.l	0
+fileseek:
+	dc.l 	0
+filesize:
+	dc.l 	0
+filedest:
+	dc.l	0
+filenameVid:
 	dc.b 	"sc_hd.tmp",0
+	even
+filenameSnd:
+	dc.b 	"sc.iff",0
 	even
 pic:
 	ds.b 	(ScreenWidth/8*ScreenHeight*Planes)
