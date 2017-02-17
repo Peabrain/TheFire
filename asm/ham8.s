@@ -55,6 +55,33 @@ _Ham8_Init:
 	add.l	#8,a0
 	dbf	d1,.l3
 
+	move.l	#down_pic+62,a0
+	move.l	#ScreenWidth/8*24/4-1,d1
+.l5:
+	eor.l	#$ffffffff,(a0)+
+	dbf	d1,.l5
+
+	lea	Bitplane1_down,a0
+	lea	Bitplane2_down,a1
+	lea	Bitplane3_down,a2
+	move.l	#down_pic+62,d0
+	move.l	#8-1,d1
+.l4:
+	move.w	d0,6(a0)
+	move.w	d0,6(a1)
+	move.w	d0,6(a2)
+	swap	d0
+	move.w	d0,2(a0)
+	move.w	d0,2(a1)
+	move.w	d0,2(a2)
+	swap	d0
+	add.l	#ScreenWidth/8*24,d0
+	add.l	#8,a0
+	add.l	#8,a1
+	add.l	#8,a2
+	dbf	d1,.l4
+	
+	
 ;	lea	Palette,a0
 ;	lea	ColorCopper1+2,a1
 ;	lea	ColorCopper2+2,a2
@@ -288,23 +315,22 @@ PlaySample:
 	rts                     ; Return to main code...
 ;--------------------------------------------------------------------	
 	SECTION	chip,DATA_C
+down_pic:
+	incbin 	down_pic.bmp
+	ds.b	ScreenWidth/8*24*7
 ;-----------
 ; display dimensions
 DISPW           equ     ScreenWidth/2
 DISPH           equ     ScreenHeight
-
-; display window in raster coordinates (HSTART must be odd)
 HSTART          equ     129+(256-DISPW)/4-64
 HEND 	        equ     HSTART+DISPW+32-$100
 VSTART          equ     36+(256-ScreenHeight)/2-8
 VEND            equ     VSTART+DISPH
-VEND2			equ		14
-
-; normal display data fetch start/stop (without scrolling)
 DFETCHSTART     equ     HSTART/2
 DFETCHSTOP      equ     DFETCHSTART+16*((DISPW/32)-1)
 
 MODE 			equ		HAM+COLORBURST+HIRES+$11
+MODE_DOWN		equ		COLORBURST+HIRES+$10
 ;-----------
 Copper1:
 	dc.w	$01fc,$4003
@@ -498,6 +524,27 @@ ColorCopper1:
 	dc.w	$0180,$0000
 	dc.w	$0100,$0000
 
+Bitplane1_down:
+	dc.w	$00e0,$0000
+	dc.w	$00e2,$0000
+	dc.w	$00e4,$0000
+	dc.w	$00e6,$0000
+	dc.w	$00e8,$0000
+	dc.w	$00ea,$0000
+	dc.w	$00ec,$0000
+	dc.w	$00ee,$0000
+	dc.w	$00f0,$0000
+	dc.w	$00f2,$0000
+	dc.w	$00f4,$0000
+	dc.w	$00f6,$0000
+	dc.w	$00f8,$0000
+	dc.w	$00fa,$0000
+	dc.w	$00fc,$0000
+	dc.w	$00fe,$0000
+
+	dc.w	$0106,$0020
+	dc.w	$0182,$0fff
+	
 	dc.w 	$ffdf,$fffe
 	dc.w	$0007+(((VEND+4)&$ff)<<8),$fffe
 	dc.w	$0180,$044f
@@ -507,6 +554,7 @@ ColorCopper1:
 	dc.w	$0180,$022f
 	dc.w	$0007+(((VEND+7)&$ff)<<8),$fffe
 	dc.w	$0180,$011f
+	dc.w	$0100,(0<<12)+MODE_DOWN
 	dc.w	$0007+(((VEND+8)&$ff)<<8),$fffe
 	dc.w	$0180,$000f
 	dc.w	$0007+(((VEND+4+25)&$ff)<<8),$fffe
@@ -515,6 +563,7 @@ ColorCopper1:
 	dc.w	$0180,$022f
 	dc.w	$0007+(((VEND+4+27)&$ff)<<8),$fffe
 	dc.w	$0180,$033f
+	dc.w	$0100,$0000
 	dc.w	$0007+(((VEND+4+28)&$ff)<<8),$fffe
 	dc.w	$0180,$044f
 	dc.w	$0007+(((VEND+4+29)&$ff)<<8),$fffe
@@ -715,6 +764,27 @@ ColorCopper2:
 	dc.w	$0180,$0000
 	dc.w	$0100,$0000
 
+Bitplane2_down:
+	dc.w	$00e0,$0000
+	dc.w	$00e2,$0000
+	dc.w	$00e4,$0000
+	dc.w	$00e6,$0000
+	dc.w	$00e8,$0000
+	dc.w	$00ea,$0000
+	dc.w	$00ec,$0000
+	dc.w	$00ee,$0000
+	dc.w	$00f0,$0000
+	dc.w	$00f2,$0000
+	dc.w	$00f4,$0000
+	dc.w	$00f6,$0000
+	dc.w	$00f8,$0000
+	dc.w	$00fa,$0000
+	dc.w	$00fc,$0000
+	dc.w	$00fe,$0000
+
+	dc.w	$0106,$0020
+	dc.w	$0182,$0fff
+	
 	dc.w 	$ffdf,$fffe
 	dc.w	$0007+(((VEND+4)&$ff)<<8),$fffe
 	dc.w	$0180,$044f
@@ -724,6 +794,7 @@ ColorCopper2:
 	dc.w	$0180,$022f
 	dc.w	$0007+(((VEND+7)&$ff)<<8),$fffe
 	dc.w	$0180,$011f
+	dc.w	$0100,(0<<12)+MODE_DOWN
 	dc.w	$0007+(((VEND+8)&$ff)<<8),$fffe
 	dc.w	$0180,$000f
 	dc.w	$0007+(((VEND+4+25)&$ff)<<8),$fffe
@@ -732,6 +803,7 @@ ColorCopper2:
 	dc.w	$0180,$022f
 	dc.w	$0007+(((VEND+4+27)&$ff)<<8),$fffe
 	dc.w	$0180,$033f
+	dc.w	$0100,$0000
 	dc.w	$0007+(((VEND+4+28)&$ff)<<8),$fffe
 	dc.w	$0180,$044f
 	dc.w	$0007+(((VEND+4+29)&$ff)<<8),$fffe
@@ -932,6 +1004,27 @@ ColorCopper3:
 	dc.w	$0180,$0000
 	dc.w	$0100,$0000
 
+Bitplane3_down:
+	dc.w	$00e0,$0000
+	dc.w	$00e2,$0000
+	dc.w	$00e4,$0000
+	dc.w	$00e6,$0000
+	dc.w	$00e8,$0000
+	dc.w	$00ea,$0000
+	dc.w	$00ec,$0000
+	dc.w	$00ee,$0000
+	dc.w	$00f0,$0000
+	dc.w	$00f2,$0000
+	dc.w	$00f4,$0000
+	dc.w	$00f6,$0000
+	dc.w	$00f8,$0000
+	dc.w	$00fa,$0000
+	dc.w	$00fc,$0000
+	dc.w	$00fe,$0000
+
+	dc.w	$0106,$0020
+	dc.w	$0182,$0fff
+	
 	dc.w 	$ffdf,$fffe
 	dc.w	$0007+(((VEND+4)&$ff)<<8),$fffe
 	dc.w	$0180,$044f
@@ -941,6 +1034,7 @@ ColorCopper3:
 	dc.w	$0180,$022f
 	dc.w	$0007+(((VEND+7)&$ff)<<8),$fffe
 	dc.w	$0180,$011f
+	dc.w	$0100,(0<<12)+MODE_DOWN
 	dc.w	$0007+(((VEND+8)&$ff)<<8),$fffe
 	dc.w	$0180,$000f
 	dc.w	$0007+(((VEND+4+25)&$ff)<<8),$fffe
@@ -949,12 +1043,14 @@ ColorCopper3:
 	dc.w	$0180,$022f
 	dc.w	$0007+(((VEND+4+27)&$ff)<<8),$fffe
 	dc.w	$0180,$033f
+	dc.w	$0100,$0000
 	dc.w	$0007+(((VEND+4+28)&$ff)<<8),$fffe
 	dc.w	$0180,$044f
 	dc.w	$0007+(((VEND+4+29)&$ff)<<8),$fffe
 	dc.w	$0180,$0000
 	dc.w	$ffff,$fffe
 
+;--------------------------------------------------------------------
 *********************************************************************
 	section mem,BSS_C
 ChipMemory:
