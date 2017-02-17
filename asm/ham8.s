@@ -81,6 +81,57 @@ _Ham8_Init:
 	add.l	#8,a2
 	dbf	d1,.l4
 	
+	lea	Bitplane1_top,a0
+	lea	Bitplane2_top,a1
+	lea	Bitplane3_top,a2
+	move.l	#pic_top,d0
+	move.l	#8-1,d1
+.l6:
+	move.w	d0,6(a0)
+	move.w	d0,6(a1)
+	move.w	d0,6(a2)
+	swap	d0
+	move.w	d0,2(a0)
+	move.w	d0,2(a1)
+	move.w	d0,2(a2)
+	swap	d0
+	add.l	#ScreenWidth/8*8,d0
+	add.l	#8,a0
+	add.l	#8,a1
+	add.l	#8,a2
+	dbf	d1,.l6
+
+	lea		font8x8_basic+62,a1
+	move.w	#16*16*8/4-1,d0
+.l7:
+	eor.l	#$ffffffff,(a1)+
+	dbf		d0,.l7
+
+	
+	lea		text,a2
+	lea		font8x8_basic+62,a1
+	lea		pic_top,a0
+.drText:
+	eor.l	d0,d0
+	move.b	(a2)+,d0
+;	move.b	#'A',d0
+	beq.b 	.endText
+	move.w	d0,d1
+	and.w	#$f,d1
+	eor.w	d1,d0
+	lsl.w	#3,d0
+	add.w	d1,d0
+	move.b	(a1,d0.w),(a0)
+	move.b	16*1(a1,d0.w),ScreenWidth/8*1(a0)
+	move.b	16*2(a1,d0.w),ScreenWidth/8*2(a0)
+	move.b	16*3(a1,d0.w),ScreenWidth/8*3(a0)
+	move.b	16*4(a1,d0.w),ScreenWidth/8*4(a0)
+	move.b	16*5(a1,d0.w),ScreenWidth/8*5(a0)
+	move.b	16*6(a1,d0.w),ScreenWidth/8*6(a0)
+	move.b	16*7(a1,d0.w),ScreenWidth/8*7(a0)
+	addq	#1,a0
+	bra.b	.drText
+.endText:
 	
 ;	lea	Palette,a0
 ;	lea	ColorCopper1+2,a1
@@ -336,6 +387,35 @@ Copper1:
 	dc.w	$01fc,$4003
 	dc.w	$0180,$0000
 
+Bitplane1_top:
+	dc.w	$00e0,$0000
+	dc.w	$00e2,$0000
+	dc.w	$00e4,$0000
+	dc.w	$00e6,$0000
+	dc.w	$00e8,$0000
+	dc.w	$00ea,$0000
+	dc.w	$00ec,$0000
+	dc.w	$00ee,$0000
+	dc.w	$00f0,$0000
+	dc.w	$00f2,$0000
+	dc.w	$00f4,$0000
+	dc.w	$00f6,$0000
+	dc.w	$00f8,$0000
+	dc.w	$00fa,$0000
+	dc.w	$00fc,$0000
+	dc.w	$00fe,$0000
+
+	dc.w	$0106,$0020
+	dc.w	$0182,$0fff
+
+	dc.w	$008e,$2c00+HSTART
+	dc.w	$0090,$2c00+HEND
+	dc.w	$0092,DFETCHSTART
+	dc.w	$0094,DFETCHSTOP
+	dc.w	$0108,0 ; ScreenWidth/8*(Planes-1)
+	dc.w	$010a,0 ; ScreenWidth/8*(Planes-1)
+	dc.w	$0102,$0044
+
 	dc.w	$0007+((VSTART-18)<<8),$fffe
 	dc.w	$0180,$044f
 	dc.w	$0007+((VSTART-17)<<8),$fffe
@@ -344,6 +424,7 @@ Copper1:
 	dc.w	$0180,$022f
 	dc.w	$0007+((VSTART-15)<<8),$fffe
 	dc.w	$0180,$011f
+	dc.w	$0100,(0<<12)+MODE_DOWN
 	dc.w	$0007+((VSTART-14)<<8),$fffe
 	dc.w	$0180,$000f
 
@@ -351,12 +432,14 @@ Copper1:
 	dc.w	$0180,$011f
 	dc.w	$0007+((VSTART-7)<<8),$fffe
 	dc.w	$0180,$022f
+	dc.w	$0100,$0000
 	dc.w	$0007+((VSTART-6)<<8),$fffe
 	dc.w	$0180,$033f
 	dc.w	$0007+((VSTART-5)<<8),$fffe
 	dc.w	$0180,$044f
 	dc.w	$0007+((VSTART-4)<<8),$fffe
 	dc.w	$0180,$0000
+
 	dc.w	$008e,$2c00+HSTART
 	dc.w	$0090,$2c00+HEND
 	dc.w	$0092,DFETCHSTART
@@ -575,6 +658,35 @@ Copper2:
 	dc.w	$01fc,$4003
 	dc.w	$0180,$0000
 
+Bitplane2_top:
+	dc.w	$00e0,$0000
+	dc.w	$00e2,$0000
+	dc.w	$00e4,$0000
+	dc.w	$00e6,$0000
+	dc.w	$00e8,$0000
+	dc.w	$00ea,$0000
+	dc.w	$00ec,$0000
+	dc.w	$00ee,$0000
+	dc.w	$00f0,$0000
+	dc.w	$00f2,$0000
+	dc.w	$00f4,$0000
+	dc.w	$00f6,$0000
+	dc.w	$00f8,$0000
+	dc.w	$00fa,$0000
+	dc.w	$00fc,$0000
+	dc.w	$00fe,$0000
+
+	dc.w	$0106,$0020
+	dc.w	$0182,$0fff
+
+	dc.w	$008e,$2c00+HSTART
+	dc.w	$0090,$2c00+HEND
+	dc.w	$0092,DFETCHSTART
+	dc.w	$0094,DFETCHSTOP
+	dc.w	$0108,0 ; ScreenWidth/8*(Planes-1)
+	dc.w	$010a,0 ; ScreenWidth/8*(Planes-1)
+	dc.w	$0102,$0044
+
 	dc.w	$0007+((VSTART-18)<<8),$fffe
 	dc.w	$0180,$044f
 	dc.w	$0007+((VSTART-17)<<8),$fffe
@@ -583,6 +695,7 @@ Copper2:
 	dc.w	$0180,$022f
 	dc.w	$0007+((VSTART-15)<<8),$fffe
 	dc.w	$0180,$011f
+	dc.w	$0100,(0<<12)+MODE_DOWN
 	dc.w	$0007+((VSTART-14)<<8),$fffe
 	dc.w	$0180,$000f
 
@@ -590,6 +703,7 @@ Copper2:
 	dc.w	$0180,$011f
 	dc.w	$0007+((VSTART-7)<<8),$fffe
 	dc.w	$0180,$022f
+	dc.w	$0100,$0000
 	dc.w	$0007+((VSTART-6)<<8),$fffe
 	dc.w	$0180,$033f
 	dc.w	$0007+((VSTART-5)<<8),$fffe
@@ -815,6 +929,43 @@ Copper3:
 	dc.w	$01fc,$4003
 	dc.w	$0180,$0000
 
+Bitplane3_top:
+	dc.w	$00e0,$0000
+	dc.w	$00e2,$0000
+	dc.w	$00e4,$0000
+	dc.w	$00e6,$0000
+	dc.w	$00e8,$0000
+	dc.w	$00ea,$0000
+	dc.w	$00ec,$0000
+	dc.w	$00ee,$0000
+	dc.w	$00f0,$0000
+	dc.w	$00f2,$0000
+	dc.w	$00f4,$0000
+	dc.w	$00f6,$0000
+	dc.w	$00f8,$0000
+	dc.w	$00fa,$0000
+	dc.w	$00fc,$0000
+	dc.w	$00fe,$0000
+
+	dc.w	$0106,$0020
+	dc.w	$0182,$0fff
+	
+	dc.w	$008e,$2c00+HSTART
+	dc.w	$0090,$2c00+HEND
+	dc.w	$0092,DFETCHSTART
+	dc.w	$0094,DFETCHSTOP
+	dc.w	$0108,0 ; ScreenWidth/8*(Planes-1)
+	dc.w	$010a,0 ; ScreenWidth/8*(Planes-1)
+	dc.w	$0102,$0044
+
+	dc.w	$008e,$2c00+HSTART
+	dc.w	$0090,$2c00+HEND
+	dc.w	$0092,DFETCHSTART
+	dc.w	$0094,DFETCHSTOP
+	dc.w	$0108,0 ; ScreenWidth/8*(Planes-1)
+	dc.w	$010a,0 ; ScreenWidth/8*(Planes-1)
+	dc.w	$0102,$0044
+
 	dc.w	$0007+((VSTART-18)<<8),$fffe
 	dc.w	$0180,$044f
 	dc.w	$0007+((VSTART-17)<<8),$fffe
@@ -823,6 +974,7 @@ Copper3:
 	dc.w	$0180,$022f
 	dc.w	$0007+((VSTART-15)<<8),$fffe
 	dc.w	$0180,$011f
+	dc.w	$0100,(0<<12)+MODE_DOWN
 	dc.w	$0007+((VSTART-14)<<8),$fffe
 	dc.w	$0180,$000f
 
@@ -830,6 +982,7 @@ Copper3:
 	dc.w	$0180,$011f
 	dc.w	$0007+((VSTART-7)<<8),$fffe
 	dc.w	$0180,$022f
+	dc.w	$0100,$0000
 	dc.w	$0007+((VSTART-6)<<8),$fffe
 	dc.w	$0180,$033f
 	dc.w	$0007+((VSTART-5)<<8),$fffe
@@ -1055,6 +1208,8 @@ Bitplane3_down:
 	section mem,BSS_C
 ChipMemory:
 	ds.b	ScreenWidth/8*ScreenHeight*Planes*3
+pic_top:
+	ds.b	ScreenWidth/8*8*Planes
 SoundData:                       ; Audio data must be in Chip memory
 	ds.b	22096
 ;--------------------------------------------------------------------
@@ -1120,6 +1275,11 @@ filenameVid:
 filenameSnd:
 	dc.b 	"sc.iff",0
 	even
+font8x8_basic:
+	incbin	font.bmp
+text:
+	incbin	text.txt
+	dc.b	0
 pic:
 	ds.b 	(ScreenWidth/8*ScreenHeight*Planes)
 *********************************************************************
