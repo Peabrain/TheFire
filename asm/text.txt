@@ -1,4 +1,4 @@
-Imagine its 1992 and you see this video on a screen played by a stock Amiga 1200 with 2 MB chipram, 
+Imagine its 1992 and you see this video on a screen played by a stock Amiga 1200, with 14 MHz, 2 MB chipram, 
 no accelerator and a 4 GB CompactFlash Card. You would be impressed, right? 
 A resolution of 704 x 192 pixels in 262144 colors and a framerate of 25 fps. So, what? 
 This is a demonstration of the new HAM8 video player, coded by peabrain of faque. ...                       
