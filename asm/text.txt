@@ -1,1 +1,12 @@
-Imagine its 1992 and you see this video on a screen played by a stock amiga 1200 with 2 MB chipram and no accelerator. You would be impressed, right? A resolution of 704 x 192 pixels in 262144 colors and a framerate of 25 fps. So, what? This is a demonstration of the new HAM8 video player, coded by peabrain of faque. ...                                                                                                                                         
+Imagine its 1992 and you see this video on a screen played by a stock Amiga 1200 with 2 MB chipram, 
+no accelerator and a 4 GB CompactFlash Card. You would be impressed, right? 
+A resolution of 704 x 192 pixels in 262144 colors and a framerate of 25 fps. So, what? 
+This is a demonstration of the new HAM8 video player, coded by peabrain of faque. ...                       
+I know, its not 1992 and technology goes on and on. But the possibility was there. The player 
+is here. But too late. ...                                Greetings fly out to all oldschool and newschool 
+scener's, my friend's from "Freie Univeritaet Berlin", all ex-faque member's and Steffi. 
+Additional greetings goes to Zoltan, Holger and all member's of Independent Arts Software. 
+And special greetings fly to Tobias. Rest in peace my friend. ... End of transmission ...
+                                                                                                    
+                                                                                               
+                                                                                             

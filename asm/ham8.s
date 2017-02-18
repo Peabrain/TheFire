@@ -240,6 +240,13 @@ DrawText:
 
 .drText:
 	eor.l	d0,d0
+	move.w	(a2,d7.w),d0
+	cmp.w	#$0d0a,d0
+	bne.b	.no0D0A
+	add.w	#2,d7
+	bra.b	.drText
+.no0D0A:
+	eor.l	d0,d0
 	move.b	(a2,d7.w),d0
 	bne.b 	.drText2
 ;	bra .endText
