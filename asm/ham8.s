@@ -10,6 +10,7 @@ Pl=0
 	xref	_InterruptSub
 	xref	_loadNext	
 	xref	_Frames
+	xref	_DeinitSub
 	xref	AEnd
 	xref	pDOSBase	
 
@@ -55,50 +56,43 @@ _Ham8_Init:
 	add.l	#8,a0
 	dbf	d1,.l3
 
+	lea	BitplaneSecond,a0
+	lea SecondCopperList,a4
+	move.w	#(SecondCopperListEnd-SecondCopperList)/4-1,d0
+.l9:
+	move.l	(a4)+,d7
+	move.l	d7,(a0)+
+	dbf		d0,.l9
+	
+	
 	move.l	#down_pic+62,a0
 	move.l	#ScreenWidth/8*24/4-1,d1
 .l5:
 	eor.l	#$ffffffff,(a0)+
 	dbf	d1,.l5
 
-	lea	Bitplane1_down,a0
-	lea	Bitplane2_down,a1
-	lea	Bitplane3_down,a2
+	lea	BitplaneSecond,a0
 	move.l	#down_pic+62,d0
 	move.l	#8-1,d1
 .l4:
 	move.w	d0,6(a0)
-	move.w	d0,6(a1)
-	move.w	d0,6(a2)
 	swap	d0
 	move.w	d0,2(a0)
-	move.w	d0,2(a1)
-	move.w	d0,2(a2)
 	swap	d0
 	add.l	#ScreenWidth/8*24,d0
 	add.l	#8,a0
-	add.l	#8,a1
-	add.l	#8,a2
 	dbf	d1,.l4
 	
 	lea	Bitplane1_top,a0
-	lea	Bitplane2_top,a1
-	lea	Bitplane3_top,a2
 	move.l	#pic_top,d0
 	move.l	#8-1,d1
 .l6:
 	move.w	d0,6(a0)
-	move.w	d0,6(a1)
-	move.w	d0,6(a2)
 	swap	d0
 	move.w	d0,2(a0)
-	move.w	d0,2(a1)
-	move.w	d0,2(a2)
 	swap	d0
-	add.l	#ScreenWidth/8*8,d0
+	add.l	#ScreenWidth*2/8*9,d0
 	add.l	#8,a0
-	add.l	#8,a1
-	add.l	#8,a2
 	dbf	d1,.l6
 
 	lea		font8x8_basic+62,a1
@@ -107,32 +101,20 @@ _Ham8_Init:
 	eor.l	#$ffffffff,(a1)+
 	dbf		d0,.l7
 
-	
-	lea		text,a2
-	lea		font8x8_basic+62,a1
-	lea		pic_top,a0
-.drText:
-	eor.l	d0,d0
-	move.b	(a2)+,d0
-;	move.b	#'A',d0
-	beq.b 	.endText
-	move.w	d0,d1
-	and.w	#$f,d1
-	eor.w	d1,d0
-	lsl.w	#3,d0
-	add.w	d1,d0
-	move.b	(a1,d0.w),(a0)
-	move.b	16*1(a1,d0.w),ScreenWidth/8*1(a0)
-	move.b	16*2(a1,d0.w),ScreenWidth/8*2(a0)
-	move.b	16*3(a1,d0.w),ScreenWidth/8*3(a0)
-	move.b	16*4(a1,d0.w),ScreenWidth/8*4(a0)
-	move.b	16*5(a1,d0.w),ScreenWidth/8*5(a0)
-	move.b	16*6(a1,d0.w),ScreenWidth/8*6(a0)
-	move.b	16*7(a1,d0.w),ScreenWidth/8*7(a0)
-	addq	#1,a0
-	bra.b	.drText
-.endText:
-	
+	move.l	#CopperBase,d0
+	move.w	d0,CopperAdrEnd+6
+	swap	d0
+	move.w	d0,CopperAdrEnd+2
+
+	move.l	#SecondCopperList,d0
+	move.w	d0,CopperAdr1+6
+	move.w	d0,CopperAdr2+6
+	move.w	d0,CopperAdr3+6
+	swap	d0
+	move.w	d0,CopperAdr1+2
+	move.w	d0,CopperAdr2+2
+	move.w	d0,CopperAdr3+2
+
 ;	lea	Palette,a0
 ;	lea	ColorCopper1+2,a1
 ;	lea	ColorCopper2+2,a2
@@ -154,11 +136,14 @@ _Ham8_Init:
 	move.l	_Frames,d0
 	move.l 	d0,lastframe
 	
+	move.l 	#_Ham8_Deinit,a0
+	move.l	a0,_DeinitSub
+	
 	bsr 	PlaySample
 	rts
 ;---------------------------------
 _Ham8_Deinit:
-	bsr 	closefile
+	move.l	#$fffffffe,CopperAdr
 	rts
 ;---------------------------------
 _Ham8_InnerLoop:
@@ -181,15 +166,42 @@ _Ham8_InnerLoop:
 	add.l	#ScreenWidth/8-4,a0
 ;	move.l	#$ffffffff,(a0)
 
-;	move.w 	#$0,$dff180
-
+;	move.w 	#$0,$dff180	
+	
 	lea	Screens,a0
 	bsr	Switch
 	lea	Copper,a0
 	bsr	Switch
-	move.l	Copper+8,$dff080
+
+	move.w	DownColLast,d0
+	move.w	DownPosLast,d1
+	lea		DownCol,a0
+	move.l	d1,d2
+	lsl.w	#2,d2
+	move.l	(a0,d2.w),a1
+	move.w	d0,2(a1)
+	move.w	#$0fff,6(a1)
+	add.w	#1,d1
+	cmp.w	#28*2,d1
+	bne.b	.not
+	move.w	#0,d1
+.not:
+	move.w	d1,DownPosLast
+	move.w	d1,d2
+	lsl.w	#2,d2
+	move.l	(a0,d2.w),a1
+	move.w	2(a1),DownColLast
+	move.w	#$088f,2(a1)
+	move.w	#$0ff0,6(a1)
 
 .norender:
+	bsr.b	DrawText
+
+	move.l	Copper+8,d0
+	move.w	d0,CopperAdr+6
+	swap	d0
+	move.w	d0,CopperAdr+2
+	move.l	#CopperBase,$dff080
 	
 ;	bsr BlitWait
 ;	move.w	_BlitListEnd+2,_BlitListEnd
@@ -208,6 +220,93 @@ Switch:
 	move.l	d1,(a0)
 	move.l	d2,4(a0)
 	move.l	d0,8(a0)
+	rts
+;--------------------------------------------------------------------	
+DrawText:
+;	rts
+	move.w	Scroll,d2
+	move.w	d2,d1
+	lsr.w	#3,d1
+	move.w	d2,d3
+	and.w	#$1f,d2
+	bne.b	.endText
+	lsr.w	#5,d3
+	lea		text,a2
+	lea		font8x8_basic+62,a1
+
+	lea		pic_top,a0
+	add.w	d3,a0
+	move.w	TextPos,d7
+
+.drText:
+	eor.l	d0,d0
+	move.b	(a2,d7.w),d0
+	bne.b 	.drText2
+;	bra .endText
+	move.w	#0,d7
+	move.w	d7,TextPos
+	bra.b	.drText
+.drText2:
+	move.w	d0,d1
+	and.w	#$f,d1
+	eor.w	d1,d0
+	lsl.w	#3,d0
+	add.w	d1,d0
+	move.l	a0,a2
+	add.w	#704/8,a2
+	move.b	(a1,d0.w),(a0)
+	move.b	16*1(a1,d0.w),ScreenWidth*2/8*1(a0)
+	move.b	16*2(a1,d0.w),ScreenWidth*2/8*2(a0)
+	move.b	16*3(a1,d0.w),ScreenWidth*2/8*3(a0)
+	move.b	16*4(a1,d0.w),ScreenWidth*2/8*4(a0)
+	move.b	16*5(a1,d0.w),ScreenWidth*2/8*5(a0)
+	move.b	16*6(a1,d0.w),ScreenWidth*2/8*6(a0)
+	move.b	16*7(a1,d0.w),ScreenWidth*2/8*7(a0)
+	move.b	(a1,d0.w),(a2)
+	move.b	16*1(a1,d0.w),ScreenWidth*2/8*1(a2)
+	move.b	16*2(a1,d0.w),ScreenWidth*2/8*2(a2)
+	move.b	16*3(a1,d0.w),ScreenWidth*2/8*3(a2)
+	move.b	16*4(a1,d0.w),ScreenWidth*2/8*4(a2)
+	move.b	16*5(a1,d0.w),ScreenWidth*2/8*5(a2)
+	move.b	16*6(a1,d0.w),ScreenWidth*2/8*6(a2)
+	move.b	16*7(a1,d0.w),ScreenWidth*2/8*7(a2)
+	add.w	#1,d7
+	move.w	d7,TextPos	
+.endText:
+
+	
+	move.w	Scroll,d2
+	move.w	d2,d1
+;	lsr.w	#1,d1
+	move.w	#$3f,d0
+	sub.w	d1,d0
+	and.w	#$3f,d0
+	move.w	d0,d1
+	lsr.w	#3,d0
+	and.w	#7,d1
+	lsr.w	#1,d1
+	lsl.w	#8,d1
+	or.w	d1,d0
+	move.w	d0,Scrolling+2
+
+	lea	Bitplane1_top,a0
+	move.l	#pic_top,d0
+	move.w	Scroll,d3
+	lsr.w	#6,d3
+	ext.l	d3
+	add.l	d3,d0
+	add.l	d3,d0
+	move.w	d0,6(a0)
+	swap	d0
+	move.w	d0,2(a0)
+
+	move.w	Scroll,d2
+	add.w	#1,d2
+	cmp.w	#4*704,d2
+	blt.b	.endf
+	move.w	#$0,d2
+.endf:
+	move.w	d2,Scroll
 	rts
 ;--------------------------------------------------------------------	
 RenderLoop:
@@ -254,7 +353,7 @@ LoadMySndFile:
 	
 	move.l 	picindex,d0
 	mulu	#884,d0
-	add.l 	#8000,d0
+	add.l 	#10000,d0
 	move.l 	d0,fileseek
 
 	move.l #884*2,d0
@@ -338,7 +437,7 @@ loadfile:
 ;	move.w 	#$f00,ColorCopper1+2
 	bsr 	closefile
 	move.l 	#0,picindex
-	move.w 	#1,AEnd
+;	move.w 	#1,AEnd
 	rts
 ;--------------------------------------------------------------------	
 PlaySample:
@@ -383,7 +482,7 @@ DFETCHSTOP      equ     DFETCHSTART+16*((DISPW/32)-1)
 MODE 			equ		HAM+COLORBURST+HIRES+$11
 MODE_DOWN		equ		COLORBURST+HIRES+$10
 ;-----------
-Copper1:
+CopperBase:
 	dc.w	$01fc,$4003
 	dc.w	$0180,$0000
 
@@ -408,12 +507,13 @@ Bitplane1_top:
 	dc.w	$0106,$0020
 	dc.w	$0182,$0fff
 
-	dc.w	$008e,$2c00+HSTART
-	dc.w	$0090,$2c00+HEND
+	dc.w	$008e,$2c00+HSTART+48
+	dc.w	$0090,$2c00+HEND-24
 	dc.w	$0092,DFETCHSTART
 	dc.w	$0094,DFETCHSTOP
-	dc.w	$0108,0 ; ScreenWidth/8*(Planes-1)
-	dc.w	$010a,0 ; ScreenWidth/8*(Planes-1)
+	dc.w	$0108,ScreenWidth/8
+	dc.w	$010a,ScreenWidth/8
+Scrolling:
 	dc.w	$0102,$0044
 
 	dc.w	$0007+((VSTART-18)<<8),$fffe
@@ -439,7 +539,13 @@ Bitplane1_top:
 	dc.w	$0180,$044f
 	dc.w	$0007+((VSTART-4)<<8),$fffe
 	dc.w	$0180,$0000
+CopperAdr:
+	dc.w	$0080,$0000
+	dc.w	$0082,$0000
+	dc.w	$0088,$0000
+	dc.w	$ffff,$fffe
 
+Copper1:	
 	dc.w	$008e,$2c00+HSTART
 	dc.w	$0090,$2c00+HEND
 	dc.w	$0092,DFETCHSTART
@@ -607,110 +713,13 @@ ColorCopper1:
 	dc.w	$0180,$0000
 	dc.w	$0100,$0000
 
-Bitplane1_down:
-	dc.w	$00e0,$0000
-	dc.w	$00e2,$0000
-	dc.w	$00e4,$0000
-	dc.w	$00e6,$0000
-	dc.w	$00e8,$0000
-	dc.w	$00ea,$0000
-	dc.w	$00ec,$0000
-	dc.w	$00ee,$0000
-	dc.w	$00f0,$0000
-	dc.w	$00f2,$0000
-	dc.w	$00f4,$0000
-	dc.w	$00f6,$0000
-	dc.w	$00f8,$0000
-	dc.w	$00fa,$0000
-	dc.w	$00fc,$0000
-	dc.w	$00fe,$0000
-
-	dc.w	$0106,$0020
-	dc.w	$0182,$0fff
-	
-	dc.w 	$ffdf,$fffe
-	dc.w	$0007+(((VEND+4)&$ff)<<8),$fffe
-	dc.w	$0180,$044f
-	dc.w	$0007+(((VEND+5)&$ff)<<8),$fffe
-	dc.w	$0180,$033f
-	dc.w	$0007+(((VEND+6)&$ff)<<8),$fffe
-	dc.w	$0180,$022f
-	dc.w	$0007+(((VEND+7)&$ff)<<8),$fffe
-	dc.w	$0180,$011f
-	dc.w	$0100,(0<<12)+MODE_DOWN
-	dc.w	$0007+(((VEND+8)&$ff)<<8),$fffe
-	dc.w	$0180,$000f
-	dc.w	$0007+(((VEND+4+25)&$ff)<<8),$fffe
-	dc.w	$0180,$011f
-	dc.w	$0007+(((VEND+4+26)&$ff)<<8),$fffe
-	dc.w	$0180,$022f
-	dc.w	$0007+(((VEND+4+27)&$ff)<<8),$fffe
-	dc.w	$0180,$033f
-	dc.w	$0100,$0000
-	dc.w	$0007+(((VEND+4+28)&$ff)<<8),$fffe
-	dc.w	$0180,$044f
-	dc.w	$0007+(((VEND+4+29)&$ff)<<8),$fffe
-	dc.w	$0180,$0000
-	dc.w	$ffff,$fffe
+CopperAdr1:
+	dc.w	$0080,$0000
+	dc.w	$0082,$0000
+	dc.w	$0088,$0000
 
 ;-----------
 Copper2:
-	dc.w	$01fc,$4003
-	dc.w	$0180,$0000
-
-Bitplane2_top:
-	dc.w	$00e0,$0000
-	dc.w	$00e2,$0000
-	dc.w	$00e4,$0000
-	dc.w	$00e6,$0000
-	dc.w	$00e8,$0000
-	dc.w	$00ea,$0000
-	dc.w	$00ec,$0000
-	dc.w	$00ee,$0000
-	dc.w	$00f0,$0000
-	dc.w	$00f2,$0000
-	dc.w	$00f4,$0000
-	dc.w	$00f6,$0000
-	dc.w	$00f8,$0000
-	dc.w	$00fa,$0000
-	dc.w	$00fc,$0000
-	dc.w	$00fe,$0000
-
-	dc.w	$0106,$0020
-	dc.w	$0182,$0fff
-
-	dc.w	$008e,$2c00+HSTART
-	dc.w	$0090,$2c00+HEND
-	dc.w	$0092,DFETCHSTART
-	dc.w	$0094,DFETCHSTOP
-	dc.w	$0108,0 ; ScreenWidth/8*(Planes-1)
-	dc.w	$010a,0 ; ScreenWidth/8*(Planes-1)
-	dc.w	$0102,$0044
-
-	dc.w	$0007+((VSTART-18)<<8),$fffe
-	dc.w	$0180,$044f
-	dc.w	$0007+((VSTART-17)<<8),$fffe
-	dc.w	$0180,$033f
-	dc.w	$0007+((VSTART-16)<<8),$fffe
-	dc.w	$0180,$022f
-	dc.w	$0007+((VSTART-15)<<8),$fffe
-	dc.w	$0180,$011f
-	dc.w	$0100,(0<<12)+MODE_DOWN
-	dc.w	$0007+((VSTART-14)<<8),$fffe
-	dc.w	$0180,$000f
-
-	dc.w	$0007+((VSTART-8)<<8),$fffe
-	dc.w	$0180,$011f
-	dc.w	$0007+((VSTART-7)<<8),$fffe
-	dc.w	$0180,$022f
-	dc.w	$0100,$0000
-	dc.w	$0007+((VSTART-6)<<8),$fffe
-	dc.w	$0180,$033f
-	dc.w	$0007+((VSTART-5)<<8),$fffe
-	dc.w	$0180,$044f
-	dc.w	$0007+((VSTART-4)<<8),$fffe
-	dc.w	$0180,$0000
-
 	dc.w	$008e,$2c00+HSTART
 	dc.w	$0090,$2c00+HEND
 	dc.w	$0092,DFETCHSTART
@@ -878,118 +887,13 @@ ColorCopper2:
 	dc.w	$0180,$0000
 	dc.w	$0100,$0000
 
-Bitplane2_down:
-	dc.w	$00e0,$0000
-	dc.w	$00e2,$0000
-	dc.w	$00e4,$0000
-	dc.w	$00e6,$0000
-	dc.w	$00e8,$0000
-	dc.w	$00ea,$0000
-	dc.w	$00ec,$0000
-	dc.w	$00ee,$0000
-	dc.w	$00f0,$0000
-	dc.w	$00f2,$0000
-	dc.w	$00f4,$0000
-	dc.w	$00f6,$0000
-	dc.w	$00f8,$0000
-	dc.w	$00fa,$0000
-	dc.w	$00fc,$0000
-	dc.w	$00fe,$0000
-
-	dc.w	$0106,$0020
-	dc.w	$0182,$0fff
-	
-	dc.w 	$ffdf,$fffe
-	dc.w	$0007+(((VEND+4)&$ff)<<8),$fffe
-	dc.w	$0180,$044f
-	dc.w	$0007+(((VEND+5)&$ff)<<8),$fffe
-	dc.w	$0180,$033f
-	dc.w	$0007+(((VEND+6)&$ff)<<8),$fffe
-	dc.w	$0180,$022f
-	dc.w	$0007+(((VEND+7)&$ff)<<8),$fffe
-	dc.w	$0180,$011f
-	dc.w	$0100,(0<<12)+MODE_DOWN
-	dc.w	$0007+(((VEND+8)&$ff)<<8),$fffe
-	dc.w	$0180,$000f
-	dc.w	$0007+(((VEND+4+25)&$ff)<<8),$fffe
-	dc.w	$0180,$011f
-	dc.w	$0007+(((VEND+4+26)&$ff)<<8),$fffe
-	dc.w	$0180,$022f
-	dc.w	$0007+(((VEND+4+27)&$ff)<<8),$fffe
-	dc.w	$0180,$033f
-	dc.w	$0100,$0000
-	dc.w	$0007+(((VEND+4+28)&$ff)<<8),$fffe
-	dc.w	$0180,$044f
-	dc.w	$0007+(((VEND+4+29)&$ff)<<8),$fffe
-	dc.w	$0180,$0000
-	dc.w	$ffff,$fffe
+CopperAdr2:
+	dc.w	$0080,$0000
+	dc.w	$0082,$0000
+	dc.w	$0088,$0000
 
 ;-----------
 Copper3:
-	dc.w	$01fc,$4003
-	dc.w	$0180,$0000
-
-Bitplane3_top:
-	dc.w	$00e0,$0000
-	dc.w	$00e2,$0000
-	dc.w	$00e4,$0000
-	dc.w	$00e6,$0000
-	dc.w	$00e8,$0000
-	dc.w	$00ea,$0000
-	dc.w	$00ec,$0000
-	dc.w	$00ee,$0000
-	dc.w	$00f0,$0000
-	dc.w	$00f2,$0000
-	dc.w	$00f4,$0000
-	dc.w	$00f6,$0000
-	dc.w	$00f8,$0000
-	dc.w	$00fa,$0000
-	dc.w	$00fc,$0000
-	dc.w	$00fe,$0000
-
-	dc.w	$0106,$0020
-	dc.w	$0182,$0fff
-	
-	dc.w	$008e,$2c00+HSTART
-	dc.w	$0090,$2c00+HEND
-	dc.w	$0092,DFETCHSTART
-	dc.w	$0094,DFETCHSTOP
-	dc.w	$0108,0 ; ScreenWidth/8*(Planes-1)
-	dc.w	$010a,0 ; ScreenWidth/8*(Planes-1)
-	dc.w	$0102,$0044
-
-	dc.w	$008e,$2c00+HSTART
-	dc.w	$0090,$2c00+HEND
-	dc.w	$0092,DFETCHSTART
-	dc.w	$0094,DFETCHSTOP
-	dc.w	$0108,0 ; ScreenWidth/8*(Planes-1)
-	dc.w	$010a,0 ; ScreenWidth/8*(Planes-1)
-	dc.w	$0102,$0044
-
-	dc.w	$0007+((VSTART-18)<<8),$fffe
-	dc.w	$0180,$044f
-	dc.w	$0007+((VSTART-17)<<8),$fffe
-	dc.w	$0180,$033f
-	dc.w	$0007+((VSTART-16)<<8),$fffe
-	dc.w	$0180,$022f
-	dc.w	$0007+((VSTART-15)<<8),$fffe
-	dc.w	$0180,$011f
-	dc.w	$0100,(0<<12)+MODE_DOWN
-	dc.w	$0007+((VSTART-14)<<8),$fffe
-	dc.w	$0180,$000f
-
-	dc.w	$0007+((VSTART-8)<<8),$fffe
-	dc.w	$0180,$011f
-	dc.w	$0007+((VSTART-7)<<8),$fffe
-	dc.w	$0180,$022f
-	dc.w	$0100,$0000
-	dc.w	$0007+((VSTART-6)<<8),$fffe
-	dc.w	$0180,$033f
-	dc.w	$0007+((VSTART-5)<<8),$fffe
-	dc.w	$0180,$044f
-	dc.w	$0007+((VSTART-4)<<8),$fffe
-	dc.w	$0180,$0000
-
 	dc.w	$008e,$2c00+HSTART
 	dc.w	$0090,$2c00+HEND
 	dc.w	$0092,DFETCHSTART
@@ -1156,8 +1060,13 @@ ColorCopper3:
 	dc.w	$0007+((VEND&$ff)<<8),$fffe
 	dc.w	$0180,$0000
 	dc.w	$0100,$0000
-
-Bitplane3_down:
+CopperAdr3:
+	dc.w	$0080,$0000
+	dc.w	$0082,$0000
+	dc.w	$0088,$0000
+	
+SecondCopperList:
+BitplaneSecond:
 	dc.w	$00e0,$0000
 	dc.w	$00e2,$0000
 	dc.w	$00e4,$0000
@@ -1180,36 +1089,108 @@ Bitplane3_down:
 	
 	dc.w 	$ffdf,$fffe
 	dc.w	$0007+(((VEND+4)&$ff)<<8),$fffe
-	dc.w	$0180,$044f
+CA:	dc.w	$0180,$044f
+	dc.w	$0182,$0fff
 	dc.w	$0007+(((VEND+5)&$ff)<<8),$fffe
-	dc.w	$0180,$033f
+CB:	dc.w	$0180,$033f
+	dc.w	$0182,$0fff
 	dc.w	$0007+(((VEND+6)&$ff)<<8),$fffe
-	dc.w	$0180,$022f
+CC:	dc.w	$0180,$022f
+	dc.w	$0182,$0fff
 	dc.w	$0007+(((VEND+7)&$ff)<<8),$fffe
-	dc.w	$0180,$011f
+CD:	dc.w	$0180,$011f
+	dc.w	$0182,$0fff
 	dc.w	$0100,(0<<12)+MODE_DOWN
 	dc.w	$0007+(((VEND+8)&$ff)<<8),$fffe
-	dc.w	$0180,$000f
-	dc.w	$0007+(((VEND+4+25)&$ff)<<8),$fffe
-	dc.w	$0180,$011f
-	dc.w	$0007+(((VEND+4+26)&$ff)<<8),$fffe
-	dc.w	$0180,$022f
-	dc.w	$0007+(((VEND+4+27)&$ff)<<8),$fffe
-	dc.w	$0180,$033f
+CE:	dc.w	$0180,$000f
+	dc.w	$0182,$0fff
+	dc.w	$0007+(((VEND+9)&$ff)<<8),$fffe
+CF:	dc.w	$0180,$000f
+	dc.w	$0182,$0fff
+	dc.w	$0007+(((VEND+10)&$ff)<<8),$fffe
+CG:	dc.w	$0180,$000f
+	dc.w	$0182,$0fff
+	dc.w	$0007+(((VEND+11)&$ff)<<8),$fffe
+CH:	dc.w	$0180,$000f
+	dc.w	$0182,$0fff
+	dc.w	$0007+(((VEND+12)&$ff)<<8),$fffe
+CI:	dc.w	$0180,$000f
+	dc.w	$0182,$0fff
+	dc.w	$0007+(((VEND+13)&$ff)<<8),$fffe
+CJ:	dc.w	$0180,$000f
+	dc.w	$0182,$0fff
+	dc.w	$0007+(((VEND+14)&$ff)<<8),$fffe
+CK:	dc.w	$0180,$000f
+	dc.w	$0182,$0fff
+	dc.w	$0007+(((VEND+15)&$ff)<<8),$fffe
+CL:	dc.w	$0180,$000f
+	dc.w	$0182,$0fff
+	dc.w	$0007+(((VEND+16)&$ff)<<8),$fffe
+CM:	dc.w	$0180,$000f
+	dc.w	$0182,$0fff
+	dc.w	$0007+(((VEND+17)&$ff)<<8),$fffe
+CN:	dc.w	$0180,$000f
+	dc.w	$0182,$0fff
+	dc.w	$0007+(((VEND+18)&$ff)<<8),$fffe
+CO:	dc.w	$0180,$000f
+	dc.w	$0182,$0fff
+	dc.w	$0007+(((VEND+19)&$ff)<<8),$fffe
+CP:	dc.w	$0180,$000f
+	dc.w	$0182,$0fff
+	dc.w	$0007+(((VEND+20)&$ff)<<8),$fffe
+CQ:	dc.w	$0180,$000f
+	dc.w	$0182,$0fff
+	dc.w	$0007+(((VEND+21)&$ff)<<8),$fffe
+CR:	dc.w	$0180,$000f
+	dc.w	$0182,$0fff
+	dc.w	$0007+(((VEND+22)&$ff)<<8),$fffe
+CS:	dc.w	$0180,$000f
+	dc.w	$0182,$0fff
+	dc.w	$0007+(((VEND+23)&$ff)<<8),$fffe
+CT:	dc.w	$0180,$000f
+	dc.w	$0182,$0fff
+	dc.w	$0007+(((VEND+24)&$ff)<<8),$fffe
+CU:	dc.w	$0180,$000f
+	dc.w	$0182,$0fff
+	dc.w	$0007+(((VEND+25)&$ff)<<8),$fffe
+CU1:	dc.w	$0180,$000f
+	dc.w	$0182,$0fff
+	dc.w	$0007+(((VEND+26)&$ff)<<8),$fffe
+CU2:	dc.w	$0180,$000f
+	dc.w	$0182,$0fff
+	dc.w	$0007+(((VEND+27)&$ff)<<8),$fffe
+CU3:	dc.w	$0180,$000f
+	dc.w	$0182,$0fff
+	dc.w	$0007+(((VEND+28)&$ff)<<8),$fffe
+CU4:	dc.w	$0180,$000f
+	dc.w	$0182,$0fff
+	dc.w	$0007+(((VEND+29)&$ff)<<8),$fffe
+CV:	dc.w	$0180,$011f
+	dc.w	$0182,$0fff
+	dc.w	$0007+(((VEND+30)&$ff)<<8),$fffe
+CW:	dc.w	$0180,$022f
+	dc.w	$0182,$0fff
+	dc.w	$0007+(((VEND+31)&$ff)<<8),$fffe
+CX:	dc.w	$0180,$033f
+	dc.w	$0182,$0fff
 	dc.w	$0100,$0000
-	dc.w	$0007+(((VEND+4+28)&$ff)<<8),$fffe
-	dc.w	$0180,$044f
-	dc.w	$0007+(((VEND+4+29)&$ff)<<8),$fffe
+	dc.w	$0007+(((VEND+32)&$ff)<<8),$fffe
+CY:	dc.w	$0180,$044f
+	dc.w	$0182,$0fff
+	dc.w	$0007+(((VEND+33)&$ff)<<8),$fffe
 	dc.w	$0180,$0000
+CopperAdrEnd:
+	dc.w	$0080,$0000
+	dc.w	$0082,$0000
 	dc.w	$ffff,$fffe
-
+SecondCopperListEnd:
 ;--------------------------------------------------------------------
 *********************************************************************
 	section mem,BSS_C
 ChipMemory:
 	ds.b	ScreenWidth/8*ScreenHeight*Planes*3
 pic_top:
-	ds.b	ScreenWidth/8*8*Planes
+	ds.b	ScreenWidth*2/8*9*Planes
 SoundData:                       ; Audio data must be in Chip memory
 	ds.b	22096
 ;--------------------------------------------------------------------
@@ -1253,6 +1234,9 @@ Palette:
 	dc.w	$0fff
 	dc.w	$0fff
 
+TextPos:
+	dc.w	0
+	even
 SndPos:
 	dc.l	884*8
 filehandle:
@@ -1269,6 +1253,16 @@ filesize:
 	dc.l 	0
 filedest:
 	dc.l	0
+DownColLast:
+	dc.w	$000f
+DownPosLast:
+	dc.w	0
+Scroll:
+	dc.w	0
+	even
+DownCol:
+	dc.l	CA,CB,CC,CD,CE,CF,CG,CH,CI,CJ,CK,CL,CM,CN,CO,CP,CQ,CR,CS,CT,CU,CU1,CU2,CU3,CU4,CV,CW,CX
+	dc.l	CY,CX,CW,CV,CU4,CU3,CU2,CU1,CU,CT,CS,CR,CQ,CP,CO,CN,CM,CL,CK,CJ,CI,CH,CG,CF,CE,CD,CC,CB
 filenameVid:
 	dc.b 	"sc_hd.tmp",0
 	even

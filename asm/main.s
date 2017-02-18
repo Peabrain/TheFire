@@ -89,6 +89,7 @@ mainloop:
 	move.l 	_DeinitSub,a0
 	cmp.l 	#0,a0
 	beq.b 	.nnn
+	move.l	#CopperBase,d0
 	jsr		(a0)
 	move.l 	#0,_DeinitSub
 .nnn:
@@ -105,6 +106,13 @@ lll:
 	cmp.w 	#0,AEnd
 	beq.b 	mainloop
 exit:
+.wframe_:
+	btst	#0,$dff005
+	bne.b	.wframe_
+.wframe2_:
+	cmp.b	#$5,$dff006
+	bne.b	.wframe2_
+	
 	; mt_remove_cia(a6=CUSTOM)
 	lea 	CUSTOM,a6
 	jsr 	mt_remove_cia
@@ -216,6 +224,12 @@ NextEffectInit:
 	move.w	#0,_BEnd
 	move.w 	#1,EffectNext
 	rts
+;--------------------------------------------------------------------	
+	section ch,DATA_C
+CopperBase:
+	dc.w	$01fc,$4003
+	dc.w	$0180,$0000
+	dc.w	$ffff,$fffe
 ;--------------------------------------------------------------------	
 	section	data,DATA_P
 org_copper:
