@@ -284,3 +284,7 @@ void	PreWolfenstein(__reg("a0") char *Memory)
 		*((unsigned short*)memory) = 0x4e75;memory += 2;
 	}
 }
+void	testCommandLine(__reg("d0") _d0,__reg("d0") _d1,__reg("d0") _d2,__reg("d0") _d3,__reg("d0") _d4,__reg("d0") _d5,__reg("d0") _d6,__reg("d0") _d7)
+{
+	
+}

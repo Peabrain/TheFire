@@ -14,8 +14,9 @@
 #include "fft.h"
 #include "exoquant.h"
 
+//#define CHEAP
 #define HAM8
-#define HIRES
+//#define HIRES
 #ifdef HAM8
 #define PLANES 8
 #else
@@ -130,13 +131,17 @@ typedef struct DATA
     std::string _in;
     std::string _out;
     void *mem;
+	void *chunky;
 	int stats;
+	bool success;
 };
 
+void convertSequence(const char *path,int i);
+void convertSequence(const char *path, int start, int Len, int zz);
 void convert(void *data);
+void processCheap(unsigned char *mem, unsigned char *ham, int w, int h, DATA *Data);
 void process(unsigned  char *mem, unsigned char *ham, int w, int h, DATA *Data);
-void convertSequence(const char *path,int start, int Len, int zz);
-int changeColor(int c, int x, int y, unsigned char *pl, unsigned int bit, int lum, bool dith);
+int changeColor(int c, int x, int y, unsigned char *pl, unsigned int bit, int lum, bool dith, unsigned char *chunky);
 int prepareIndexBuffer(LUM *lumlist, int *r_tab, int *g_tab, int *b_tab, int w, int h, unsigned char *mem);
 void doDCT(unsigned char*mem, int w, int h);
 void doFFT(unsigned char*mem);
@@ -161,7 +166,8 @@ int main(int argc, const char * argv[])
 //	convertSequence("nvidia_hd", 0, 4260, 1);
 //	convertSequence("cataclysm_hd", 0, 3660, 1);
 //	convertSequence("hots_hd", 0, 2959, 1);
-	convertSequence("sc_hd", 0, 9397, 2);
+//	convertSequence("sc_hd", 5000, 1, 2);
+	convertSequence(argv[1],atoi(argv[2]));
 
 //	DCT dct;
 //	dct.main();
@@ -171,12 +177,17 @@ int main(int argc, const char * argv[])
 	printf("Copied Pattern: %i\n", stats.copied_pattern);
 	return 0;
 }
+void convertSequence(const char *path,int i)
+{
+	convertSequence(path, 0,-1, i);
+}
 void convertSequence(const char *path,int start,int Len,int zz)
 {
 #define CACHES 4
 	unsigned char CacheBuffer[Width / 8 * Height * PLANES * CACHES];
 	int CacheIdx = 0;
 	int len = start + Len;
+	bool running = true;
     char filename2[256];
 
 	memset(CacheBuffer, 0, Width / 8 * Height * PLANES * CACHES);
@@ -194,23 +205,33 @@ void convertSequence(const char *path,int start,int Len,int zz)
         {
             t1[i]= 0;
         }
-        while(count < len)
+        while(running)
         {
-            std::string filename;
-            std::string filename2;
-            char tm[256];
-            sprintf(tm,"../../data/%s/%4.4i.bmp",path,count);
-            filename.append(tm);
-            sprintf(tm,"../asm/%s/%4.4i.bmp.tmp",path,count2++);
-            filename2.append(tm);
-            data[j]._in = filename;
-            data[j]._out = filename2;
-            t1[j++] = new std::thread(convert,&data[j]);
-			data[j].stats = 0;
-
-            count += zz;
+			for (int i = 0; i < THREADS; i++)
+			{
+				if (Len == -1 || count < len)
+				{
+					std::string filename;
+					std::string filename2;
+					char tm[256];
+					sprintf(tm, "../../data/%s/%4.4i.bmp", path, count);
+					filename.append(tm);
+					sprintf(tm, "../asm/%s/%4.4i.bmp.tmp", path, count2++);
+					filename2.append(tm);
+					data[j]._in = filename;
+					data[j]._out = filename2;
+					data[j].stats = 0;
+					data[j].chunky = 0;
+					data[j].mem = 0;
+					t1[j++] = new std::thread(convert, &data[j]);
+					count += zz;
+				}
+				else
+					break;
+			}
             if(j == THREADS || count >= len)
             {
+				if (count >= len && len != -1) running = false;
 				for (int i = 0; i < THREADS; i++)
 				{
 					if (t1[i] != 0)
@@ -220,52 +241,19 @@ void convertSequence(const char *path,int start,int Len,int zz)
                 {
                     if(t1[i] != 0)
                     {
+						if (data[i].success == false)
+						{
+							running = false;
+							break;
+						}
                         t1[i]= 0;
 
-/*						for (int y = 0; y < Height / CT_DIM; y++)
-						{
-							for (int x = 0; x < Width / 8; x++)
-							{
-								int scrpos = y * CT_DIM * Width / 8 + x;
-								unsigned char *mem = (unsigned char *)data[i].mem + scrpos;
-								int found = -1;
-								for (int kk = 0; kk < CACHES && (found == -1); kk++)
-								{
-									int k = (CacheIdx - kk) & (CACHES - 1);
-									for (int l = 0; l < Width / 8 * (Height - CT_DIM) && (found == -1);l++)
-									{
-										bool fail = false;
-										for (int p = 0; p < PLANES && !fail; p++)
-										{
-											for (int i = 0; i < CT_DIM && !fail; i++)
-											{
-												if (mem[i * Width / 8 + p * Width / 8 * Height] != CacheBuffer[l + k * Width / 8 * Height * PLANES + i * Width / 8 + p * Width / 8 * Height]) fail = true;
-											}
-										}
-										if (fail == false)
-										{
-											found = l + k * Width / 8 * Height * PLANES;
-										}
-									}
-								}
-								if (found != -1)
-								{
-									data[i].stats++;
-									for (int p = 0; p < PLANES; p++)
-									{
-										for (int i = 0; i < CT_DIM; i++)
-										{
-											mem[i * Width / 8 + p * Width / 8 * Height] = CacheBuffer[found + i * Width / 8 + p * Width / 8 * Height];
-										}
-									}
-									printf("");
-								}
-							}
-						}
-	*/					fwrite(data[i].mem, Width / 8 * Height * PLANES, 1, f2);
+						fwrite(data[i].mem, Width / 8 * Height * PLANES, 1, f2);
+//						fwrite(data[i].chunky, Width * Height, 1, f2);
 
 //						memccpy(CacheBuffer + CacheIdx * Width / 8 * Height * PLANES,data[i].mem,1, Width / 8 * Height * PLANES);
                         free(data[i].mem);
+						free(data[i].chunky);
 					
 						stats.copied_pattern += data[i].stats;
 						stats.rendered_pattern += Width / CT_DIM * Height / CT_DIM;
@@ -287,6 +275,7 @@ void convertSequence(const char *path,int start,int Len,int zz)
 void convert(void *data)
 {
     DATA *Data = (DATA*)data;
+	Data->success = false;
     if(FILE *f = fopen(Data->_in.c_str(),"rb"))
     {
         fseek(f, 0L, SEEK_END);
@@ -295,21 +284,28 @@ void convert(void *data)
 
         unsigned char *mem = (unsigned char*)malloc(sz);
         Data->mem = (unsigned char*)malloc(Width / 8 * Height * PLANES);
+		Data->chunky = malloc(Width * Height);
 		memset(Data->mem,0, Width / 8 * Height * PLANES);
         
         fread(mem,sz,1,f);
         
         fclose(f);
 
-        process(mem+54,(unsigned char *)Data->mem,Width,Height,Data);
+#ifdef CHEAP
+		processCheap(mem + 54, (unsigned char *)Data->mem, Width, Height, Data);
+#else
+		process(mem + 54, (unsigned char *)Data->mem, Width, Height, Data);
+#endif // CHEAP
 
         free(mem);
-    }
+		Data->success = true;
+	}
     else
         printf("cannot find file %s\n",Data->_in.c_str());
 }
 void process(unsigned char *mem,unsigned char *ham,int w,int h, DATA *Data)
 {
+	unsigned char *chunky = (unsigned char*)Data->chunky;
 	unsigned int *blockCodeVert = 0;
 //	unsigned int *blockCodeHori = 0;
 	int colorIndexTab[0x1000];
@@ -470,7 +466,7 @@ void process(unsigned char *mem,unsigned char *ham,int w,int h, DATA *Data)
 			case 0:
 			{
 				int l = 0.299 * (float)ra + 0.587 * (float)ga + 0.114 * (float)ba;
-				changeColor(b, x, y, pl, bit, l, dith);
+				changeColor(b, x, y, pl, bit, l, dith, chunky);
 			}break;
 			case 1:
 			{
@@ -480,7 +476,7 @@ void process(unsigned char *mem,unsigned char *ham,int w,int h, DATA *Data)
 				pl[PLANES - 2] |= bit;
 #endif
 				int l = 0.299 * (float)ra + 0.587 * (float)ga + 0.114 * (float)ba;
-				ba = changeColor(b, x, y, pl, bit, l, dith);
+				ba = changeColor(b, x, y, pl, bit, l, dith, chunky);
 			}break;
 			case 2:
 			{
@@ -490,7 +486,7 @@ void process(unsigned char *mem,unsigned char *ham,int w,int h, DATA *Data)
 				pl[PLANES - 1] |= bit;
 #endif
 				int l = 0.299 * (float)ra + 0.587 * (float)ga + 0.114 * (float)ba;
-				ra = changeColor(r, x, y, pl, bit, l, dith);
+				ra = changeColor(r, x, y, pl, bit, l, dith,chunky);
 			}break;
 			case 3:
 			{
@@ -502,7 +498,7 @@ void process(unsigned char *mem,unsigned char *ham,int w,int h, DATA *Data)
 				pl[PLANES - 1] |= bit;
 #endif
 				int l = 0.299 * (float)ra + 0.587 * (float)ga + 0.114 * (float)ba;
-				ga = changeColor(g, x, y, pl, bit, l, dith);
+				ga = changeColor(g, x, y, pl, bit, l, dith, chunky);
 			}break;
 			}
 
@@ -528,7 +524,39 @@ void process(unsigned char *mem,unsigned char *ham,int w,int h, DATA *Data)
 	free(blockCodeVert);
 //	free(blockCodeHori);
 }
-int changeColor(int c,int x,int y,unsigned char *pl,unsigned int bit, int lum,bool dith)
+void processCheap(unsigned char *mem, unsigned char *ham, int w, int h, DATA *Data)
+{
+	Data->stats = 0;
+	unsigned char *chunky = (unsigned char*)malloc(h * w);
+	memset(chunky, 0, h * w);
+	for (int i = 0; i < w / 2 * h; i++)
+	{
+		unsigned int b = ((unsigned int)mem[i * 3 * 2] + (unsigned int)mem[i * 3 * 2 + 1]) >> 1;
+		unsigned int g = ((unsigned int)mem[(i * 3 + 1) * 2] + (unsigned int)mem[(i * 3 + 1) * 2 + 1]) >> 1;
+		unsigned int r = ((unsigned int)mem[(i * 3 + 2) * 2] + (unsigned int)mem[(i * 3 + 2) * 2 + 1]) >> 1;
+		chunky[i * 2] = (g >> 2) | 0xc0;
+		chunky[i * 2 + 1] = (b >> 5) | ((r >> 2) & 0x38);
+	}
+
+	for (int i = 0; i < w / 8 * h; i++)
+	{
+		unsigned char bit = 0x80;
+		for (int j = 0; j < 8; j++, bit >>= 1)
+		{
+			for (int k = 0; k < PLANES; k++)
+			{
+#ifdef WIN32
+				if(chunky[i * 8 + j] & (1 << k)) ham[i + Width / 8 * Height * k] |= bit;// _byteswap_ulong(pl[i]);
+																			//					ham[(Width / 8 * y + x / 8) * PLANES + i] = pl[i];// _byteswap_ulong(pl[i]);
+#else
+				ham[Width / 8 * y + x / 8 + Width / 8 * Height * i] = pl[i];// __builtin_bswap32(pl[i]);
+#endif
+			}
+		}
+	}
+	free(chunky);
+}
+int changeColor(int c,int x,int y,unsigned char *pl,unsigned int bit, int lum,bool dith,unsigned char *chunky)
 {
     int m = c;
 #ifdef DITHER
@@ -538,7 +566,7 @@ int changeColor(int c,int x,int y,unsigned char *pl,unsigned int bit, int lum,bo
 		if (matrix[p] & (1 << (((x) & 3) + (y & 3) * 4)))
 		{
 #ifdef HAM8
-			m += 2;
+			m += 4;
 #else
 			m += 16;
 #endif
@@ -552,6 +580,7 @@ int changeColor(int c,int x,int y,unsigned char *pl,unsigned int bit, int lum,bo
 #endif
 //	c = m;
 	m >>= (2 + 8 - PLANES);
+	chunky[y * Width + x] = m;
 	for (int i = 0; i < PLANES - 2; i++)
 	{
 #ifdef HAM8

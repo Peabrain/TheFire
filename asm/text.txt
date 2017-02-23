@@ -4,7 +4,7 @@ A resolution of 704 x 192 pixels in 262144 colors and a framerate of 25 fps. So,
 This is a demonstration of the new HAM8 video player, coded by peabrain of faque. ...                       
 I know, its not 1992 and technology goes on and on. But the possibility was there. The player 
 is here. But too late. ...                                Greetings fly out to all oldschool and newschool 
-scener's, my friend's from "Freie Univeritaet Berlin", all ex-faque member's and Steffi. 
+scener's, my friend's in "Freie Univeritaet Berlin", all ex-faque member's and Steffi. 
 Additional greetings goes to Zoltan, Holger and all member's of Independent Arts Software. 
 And special greetings fly to Tobias. Rest in peace my friend. ... End of transmission ...
                                                                                                     

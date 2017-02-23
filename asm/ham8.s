@@ -1,4 +1,4 @@
-ScreenWidth = 704
+ScreenWidth = 320
 ScreenHeight= 192
 Planes= 8
 Pl=0
@@ -115,20 +115,23 @@ _Ham8_Init:
 	move.w	d0,CopperAdr2+2
 	move.w	d0,CopperAdr3+2
 
-;	lea	Palette,a0
-;	lea	ColorCopper1+2,a1
-;	lea	ColorCopper2+2,a2
-;	lea	ColorCopper3+2,a3
-;	move.w	#32-1,d7
-;clo:	
-;	move.w	(a0)+,d0
-;	move.w	d0,(a1)
-;	move.w	d0,(a2)
-;	move.w	d0,(a3)
-;	add	#4,a1
-;	add	#4,a2
-;	add	#4,a3
-;	dbf	d7,clo
+	lea	Palette,a0
+	lea	ColorCopper,a2
+	move.w	#2-1,d7
+.clo1:	
+	move.w	a2,a1
+	swap	d7
+	move.w	#32-1,d7
+.clo:	
+	move.l	(a0)+,d0
+	move.w	d0,4*32+4+6(a1)
+	swap	d0
+	move.w	d0,6(a1)
+	add.l	#4,a1
+	dbf	d7,.clo
+	add.l	#4*33*2,a2
+	swap	d7
+	dbf	d7,.clo1
 
 	move.l 	#_Ham8_InnerLoop,a0
 	move.l 	a0,_InterruptSub
@@ -360,7 +363,7 @@ LoadMySndFile:
 	
 	move.l 	picindex,d0
 	mulu	#884,d0
-	add.l 	#10000,d0
+	add.l 	#10000,d0		;org
 	move.l 	d0,fileseek
 
 	move.l #884*2,d0
@@ -438,7 +441,7 @@ loadfile:
 	bsr 	closefile
 	rts
 .error1:
-	move.w 	#$f0,ColorCopper1+2
+;	move.w 	#$f0,ColorCopper1+2
 	rts
 .error2:
 ;	move.w 	#$f00,ColorCopper1+2
@@ -477,17 +480,17 @@ down_pic:
 	ds.b	ScreenWidth/8*24*7
 ;-----------
 ; display dimensions
-DISPW           equ     ScreenWidth/2
+DISPW           equ     ScreenWidth
 DISPH           equ     ScreenHeight
 HSTART          equ     129+(256-DISPW)/4-64
 HEND 	        equ     HSTART+DISPW+32-$100
 VSTART          equ     36+(256-ScreenHeight)/2-8
 VEND            equ     VSTART+DISPH
 DFETCHSTART     equ     HSTART/2
-DFETCHSTOP      equ     DFETCHSTART+16*((DISPW/32)-1)
+DFETCHSTOP      equ     DFETCHSTART+16*((DISPW/32)-3)
 
-MODE 			equ		HAM+COLORBURST+HIRES+$11
-MODE_DOWN		equ		COLORBURST+HIRES+$10
+MODE 			equ		HAM+COLORBURST+$11
+MODE_DOWN		equ		0;COLORBURST+HIRES+$10
 ;-----------
 CopperBase:
 	dc.w	$01fc,$4003
@@ -546,39 +549,8 @@ Scrolling:
 	dc.w	$0180,$044f
 	dc.w	$0007+((VSTART-4)<<8),$fffe
 	dc.w	$0180,$0000
-CopperAdr:
-	dc.w	$0080,$0000
-	dc.w	$0082,$0000
-	dc.w	$0088,$0000
-	dc.w	$ffff,$fffe
 
-Copper1:	
-	dc.w	$008e,$2c00+HSTART
-	dc.w	$0090,$2c00+HEND
-	dc.w	$0092,DFETCHSTART
-	dc.w	$0094,DFETCHSTOP
-	dc.w	$0108,0 ; ScreenWidth/8*(Planes-1)
-	dc.w	$010a,0 ; ScreenWidth/8*(Planes-1)
-	dc.w	$0102,$0044
-	dc.w	$0104,$0200
-Bitplane1:
-	dc.w	$00e0,$0000
-	dc.w	$00e2,$0000
-	dc.w	$00e4,$0000
-	dc.w	$00e6,$0000
-	dc.w	$00e8,$0000
-	dc.w	$00ea,$0000
-	dc.w	$00ec,$0000
-	dc.w	$00ee,$0000
-	dc.w	$00f0,$0000
-	dc.w	$00f2,$0000
-	dc.w	$00f4,$0000
-	dc.w	$00f6,$0000
-	dc.w	$00f8,$0000
-	dc.w	$00fa,$0000
-	dc.w	$00fc,$0000
-	dc.w	$00fe,$0000
-ColorCopper1:
+ColorCopper:
 	dc.w	$0106,$0020
 	dc.w	$0180,$0000
 	dc.w	$0182,$0000
@@ -612,6 +584,41 @@ ColorCopper1:
 	dc.w	$01ba,$0777
 	dc.w	$01bc,$0777
 	dc.w	$01be,$0777
+
+	dc.w	$0106,$0220
+	dc.w	$0180,$0000
+	dc.w	$0182,$0444
+	dc.w	$0184,$0888
+	dc.w	$0186,$0ccc
+	dc.w	$0188,$0000
+	dc.w	$018a,$0444
+	dc.w	$018c,$0888
+	dc.w	$018e,$0ccc
+	dc.w	$0190,$0000
+	dc.w	$0192,$0444
+	dc.w	$0194,$0888
+	dc.w	$0196,$0ccc
+	dc.w	$0198,$0000
+	dc.w	$019a,$0444
+	dc.w	$019c,$0888
+	dc.w	$019e,$0ccc
+	dc.w	$01a0,$0000
+	dc.w	$01a2,$0444
+	dc.w	$01a4,$0888
+	dc.w	$01a6,$0ccc
+	dc.w	$01a8,$0000
+	dc.w	$01aa,$0444
+	dc.w	$01ac,$0888
+	dc.w	$01ae,$0ccc
+	dc.w	$01b0,$0000
+	dc.w	$01b2,$0444
+	dc.w	$01b4,$0888
+	dc.w	$01b6,$0ccc
+	dc.w	$01b8,$0000
+	dc.w	$01ba,$0444
+	dc.w	$01bc,$0888
+	dc.w	$01be,$0ccc
+
 	dc.w	$0106,$2020
 	dc.w	$0180,$0888
 	dc.w	$0182,$0888
@@ -646,39 +653,6 @@ ColorCopper1:
 	dc.w	$01bc,$0fff
 	dc.w	$01be,$0fff
 	
-	dc.w	$0106,$0220
-	dc.w	$0180,$0000
-	dc.w	$0182,$0444
-	dc.w	$0184,$0888
-	dc.w	$0186,$0ccc
-	dc.w	$0188,$0000
-	dc.w	$018a,$0444
-	dc.w	$018c,$0888
-	dc.w	$018e,$0ccc
-	dc.w	$0190,$0000
-	dc.w	$0192,$0444
-	dc.w	$0194,$0888
-	dc.w	$0196,$0ccc
-	dc.w	$0198,$0000
-	dc.w	$019a,$0444
-	dc.w	$019c,$0888
-	dc.w	$019e,$0ccc
-	dc.w	$01a0,$0000
-	dc.w	$01a2,$0444
-	dc.w	$01a4,$0888
-	dc.w	$01a6,$0ccc
-	dc.w	$01a8,$0000
-	dc.w	$01aa,$0444
-	dc.w	$01ac,$0888
-	dc.w	$01ae,$0ccc
-	dc.w	$01b0,$0000
-	dc.w	$01b2,$0444
-	dc.w	$01b4,$0888
-	dc.w	$01b6,$0ccc
-	dc.w	$01b8,$0000
-	dc.w	$01ba,$0444
-	dc.w	$01bc,$0888
-	dc.w	$01be,$0ccc
 	dc.w	$0106,$2220
 	dc.w	$0180,$0000
 	dc.w	$0182,$0444
@@ -712,6 +686,41 @@ ColorCopper1:
 	dc.w	$01ba,$0444
 	dc.w	$01bc,$0888
 	dc.w	$01be,$0ccc
+
+	dc.w	$0106,$0020
+	
+CopperAdr:
+	dc.w	$0080,$0000
+	dc.w	$0082,$0000
+	dc.w	$0088,$0000
+	dc.w	$ffff,$fffe
+
+Copper1:	
+	dc.w	$008e,$2c00+HSTART
+	dc.w	$0090,$2c00+HEND
+	dc.w	$0092,DFETCHSTART
+	dc.w	$0094,DFETCHSTOP
+	dc.w	$0108,0 ; ScreenWidth/8*(Planes-1)
+	dc.w	$010a,0 ; ScreenWidth/8*(Planes-1)
+	dc.w	$0102,$0044
+	dc.w	$0104,$0200
+Bitplane1:
+	dc.w	$00e0,$0000
+	dc.w	$00e2,$0000
+	dc.w	$00e4,$0000
+	dc.w	$00e6,$0000
+	dc.w	$00e8,$0000
+	dc.w	$00ea,$0000
+	dc.w	$00ec,$0000
+	dc.w	$00ee,$0000
+	dc.w	$00f0,$0000
+	dc.w	$00f2,$0000
+	dc.w	$00f4,$0000
+	dc.w	$00f6,$0000
+	dc.w	$00f8,$0000
+	dc.w	$00fa,$0000
+	dc.w	$00fc,$0000
+	dc.w	$00fe,$0000
 
 	dc.w	$0106,$0020
 	dc.w	$0007+(VSTART<<8),$fffe
@@ -752,140 +761,6 @@ Bitplane2:
 	dc.w	$00fa,$0000
 	dc.w	$00fc,$0000
 	dc.w	$00fe,$0000
-ColorCopper2:
-	dc.w	$0106,$0020
-	dc.w	$0180,$0000
-	dc.w	$0182,$0000
-	dc.w	$0184,$0000
-	dc.w	$0186,$0000
-	dc.w	$0188,$0111
-	dc.w	$018a,$0111
-	dc.w	$018c,$0111
-	dc.w	$018e,$0111
-	dc.w	$0190,$0222
-	dc.w	$0192,$0222
-	dc.w	$0194,$0222
-	dc.w	$0196,$0222
-	dc.w	$0198,$0333
-	dc.w	$019a,$0333
-	dc.w	$019c,$0333
-	dc.w	$019e,$0333
-	dc.w	$01a0,$0444
-	dc.w	$01a2,$0444
-	dc.w	$01a4,$0444
-	dc.w	$01a6,$0444
-	dc.w	$01a8,$0555
-	dc.w	$01aa,$0555
-	dc.w	$01ac,$0555
-	dc.w	$01ae,$0555
-	dc.w	$01b0,$0666
-	dc.w	$01b2,$0666
-	dc.w	$01b4,$0666
-	dc.w	$01b6,$0666
-	dc.w	$01b8,$0777
-	dc.w	$01ba,$0777
-	dc.w	$01bc,$0777
-	dc.w	$01be,$0777
-	dc.w	$0106,$2020
-	dc.w	$0180,$0888
-	dc.w	$0182,$0888
-	dc.w	$0184,$0888
-	dc.w	$0186,$0888
-	dc.w	$0188,$0999
-	dc.w	$018a,$0999
-	dc.w	$018c,$0999
-	dc.w	$018e,$0999
-	dc.w	$0190,$0aaa
-	dc.w	$0192,$0aaa
-	dc.w	$0194,$0aaa
-	dc.w	$0196,$0aaa
-	dc.w	$0198,$0bbb
-	dc.w	$019a,$0bbb
-	dc.w	$019c,$0bbb
-	dc.w	$019e,$0bbb
-	dc.w	$01a0,$0ccc
-	dc.w	$01a2,$0ccc
-	dc.w	$01a4,$0ccc
-	dc.w	$01a6,$0ccc
-	dc.w	$01a8,$0ddd
-	dc.w	$01aa,$0ddd
-	dc.w	$01ac,$0ddd
-	dc.w	$01ae,$0ddd
-	dc.w	$01b0,$0eee
-	dc.w	$01b2,$0eee
-	dc.w	$01b4,$0eee
-	dc.w	$01b6,$0eee
-	dc.w	$01b8,$0fff
-	dc.w	$01ba,$0fff
-	dc.w	$01bc,$0fff
-	dc.w	$01be,$0fff
-	
-	dc.w	$0106,$0220
-	dc.w	$0180,$0000
-	dc.w	$0182,$0444
-	dc.w	$0184,$0888
-	dc.w	$0186,$0ccc
-	dc.w	$0188,$0000
-	dc.w	$018a,$0444
-	dc.w	$018c,$0888
-	dc.w	$018e,$0ccc
-	dc.w	$0190,$0000
-	dc.w	$0192,$0444
-	dc.w	$0194,$0888
-	dc.w	$0196,$0ccc
-	dc.w	$0198,$0000
-	dc.w	$019a,$0444
-	dc.w	$019c,$0888
-	dc.w	$019e,$0ccc
-	dc.w	$01a0,$0000
-	dc.w	$01a2,$0444
-	dc.w	$01a4,$0888
-	dc.w	$01a6,$0ccc
-	dc.w	$01a8,$0000
-	dc.w	$01aa,$0444
-	dc.w	$01ac,$0888
-	dc.w	$01ae,$0ccc
-	dc.w	$01b0,$0000
-	dc.w	$01b2,$0444
-	dc.w	$01b4,$0888
-	dc.w	$01b6,$0ccc
-	dc.w	$01b8,$0000
-	dc.w	$01ba,$0444
-	dc.w	$01bc,$0888
-	dc.w	$01be,$0ccc
-	dc.w	$0106,$2220
-	dc.w	$0180,$0000
-	dc.w	$0182,$0444
-	dc.w	$0184,$0888
-	dc.w	$0186,$0ccc
-	dc.w	$0188,$0000
-	dc.w	$018a,$0444
-	dc.w	$018c,$0888
-	dc.w	$018e,$0ccc
-	dc.w	$0190,$0000
-	dc.w	$0192,$0444
-	dc.w	$0194,$0888
-	dc.w	$0196,$0ccc
-	dc.w	$0198,$0000
-	dc.w	$019a,$0444
-	dc.w	$019c,$0888
-	dc.w	$019e,$0ccc
-	dc.w	$01a0,$0000
-	dc.w	$01a2,$0444
-	dc.w	$01a4,$0888
-	dc.w	$01a6,$0ccc
-	dc.w	$01a8,$0000
-	dc.w	$01aa,$0444
-	dc.w	$01ac,$0888
-	dc.w	$01ae,$0ccc
-	dc.w	$01b0,$0000
-	dc.w	$01b2,$0444
-	dc.w	$01b4,$0888
-	dc.w	$01b6,$0ccc
-	dc.w	$01b8,$0000
-	dc.w	$01ba,$0444
-	dc.w	$01bc,$0888
-	dc.w	$01be,$0ccc
 
 	dc.w	$0106,$0020
 	dc.w	$0007+(VSTART<<8),$fffe
@@ -926,140 +801,6 @@ Bitplane3:
 	dc.w	$00fa,$0000
 	dc.w	$00fc,$0000
 	dc.w	$00fe,$0000
-ColorCopper3:
-	dc.w	$0106,$0020
-	dc.w	$0180,$0000
-	dc.w	$0182,$0000
-	dc.w	$0184,$0000
-	dc.w	$0186,$0000
-	dc.w	$0188,$0111
-	dc.w	$018a,$0111
-	dc.w	$018c,$0111
-	dc.w	$018e,$0111
-	dc.w	$0190,$0222
-	dc.w	$0192,$0222
-	dc.w	$0194,$0222
-	dc.w	$0196,$0222
-	dc.w	$0198,$0333
-	dc.w	$019a,$0333
-	dc.w	$019c,$0333
-	dc.w	$019e,$0333
-	dc.w	$01a0,$0444
-	dc.w	$01a2,$0444
-	dc.w	$01a4,$0444
-	dc.w	$01a6,$0444
-	dc.w	$01a8,$0555
-	dc.w	$01aa,$0555
-	dc.w	$01ac,$0555
-	dc.w	$01ae,$0555
-	dc.w	$01b0,$0666
-	dc.w	$01b2,$0666
-	dc.w	$01b4,$0666
-	dc.w	$01b6,$0666
-	dc.w	$01b8,$0777
-	dc.w	$01ba,$0777
-	dc.w	$01bc,$0777
-	dc.w	$01be,$0777
-	dc.w	$0106,$2020
-	dc.w	$0180,$0888
-	dc.w	$0182,$0888
-	dc.w	$0184,$0888
-	dc.w	$0186,$0888
-	dc.w	$0188,$0999
-	dc.w	$018a,$0999
-	dc.w	$018c,$0999
-	dc.w	$018e,$0999
-	dc.w	$0190,$0aaa
-	dc.w	$0192,$0aaa
-	dc.w	$0194,$0aaa
-	dc.w	$0196,$0aaa
-	dc.w	$0198,$0bbb
-	dc.w	$019a,$0bbb
-	dc.w	$019c,$0bbb
-	dc.w	$019e,$0bbb
-	dc.w	$01a0,$0ccc
-	dc.w	$01a2,$0ccc
-	dc.w	$01a4,$0ccc
-	dc.w	$01a6,$0ccc
-	dc.w	$01a8,$0ddd
-	dc.w	$01aa,$0ddd
-	dc.w	$01ac,$0ddd
-	dc.w	$01ae,$0ddd
-	dc.w	$01b0,$0eee
-	dc.w	$01b2,$0eee
-	dc.w	$01b4,$0eee
-	dc.w	$01b6,$0eee
-	dc.w	$01b8,$0fff
-	dc.w	$01ba,$0fff
-	dc.w	$01bc,$0fff
-	dc.w	$01be,$0fff
-	
-	dc.w	$0106,$0220
-	dc.w	$0180,$0000
-	dc.w	$0182,$0444
-	dc.w	$0184,$0888
-	dc.w	$0186,$0ccc
-	dc.w	$0188,$0000
-	dc.w	$018a,$0444
-	dc.w	$018c,$0888
-	dc.w	$018e,$0ccc
-	dc.w	$0190,$0000
-	dc.w	$0192,$0444
-	dc.w	$0194,$0888
-	dc.w	$0196,$0ccc
-	dc.w	$0198,$0000
-	dc.w	$019a,$0444
-	dc.w	$019c,$0888
-	dc.w	$019e,$0ccc
-	dc.w	$01a0,$0000
-	dc.w	$01a2,$0444
-	dc.w	$01a4,$0888
-	dc.w	$01a6,$0ccc
-	dc.w	$01a8,$0000
-	dc.w	$01aa,$0444
-	dc.w	$01ac,$0888
-	dc.w	$01ae,$0ccc
-	dc.w	$01b0,$0000
-	dc.w	$01b2,$0444
-	dc.w	$01b4,$0888
-	dc.w	$01b6,$0ccc
-	dc.w	$01b8,$0000
-	dc.w	$01ba,$0444
-	dc.w	$01bc,$0888
-	dc.w	$01be,$0ccc
-	dc.w	$0106,$2220
-	dc.w	$0180,$0000
-	dc.w	$0182,$0444
-	dc.w	$0184,$0888
-	dc.w	$0186,$0ccc
-	dc.w	$0188,$0000
-	dc.w	$018a,$0444
-	dc.w	$018c,$0888
-	dc.w	$018e,$0ccc
-	dc.w	$0190,$0000
-	dc.w	$0192,$0444
-	dc.w	$0194,$0888
-	dc.w	$0196,$0ccc
-	dc.w	$0198,$0000
-	dc.w	$019a,$0444
-	dc.w	$019c,$0888
-	dc.w	$019e,$0ccc
-	dc.w	$01a0,$0000
-	dc.w	$01a2,$0444
-	dc.w	$01a4,$0888
-	dc.w	$01a6,$0ccc
-	dc.w	$01a8,$0000
-	dc.w	$01aa,$0444
-	dc.w	$01ac,$0888
-	dc.w	$01ae,$0ccc
-	dc.w	$01b0,$0000
-	dc.w	$01b2,$0444
-	dc.w	$01b4,$0888
-	dc.w	$01b6,$0ccc
-	dc.w	$01b8,$0000
-	dc.w	$01ba,$0444
-	dc.w	$01bc,$0888
-	dc.w	$01be,$0ccc
 
 	dc.w	$0106,$0020
 	dc.w	$0007+(VSTART<<8),$fffe
@@ -1208,38 +949,70 @@ Screens:
 	dc.l	0,0,0
 
 Palette:
-	dc.w	$0000
-	dc.w	$0000
-	dc.w	$0111
-	dc.w	$0111
-	dc.w	$0222
-	dc.w	$0222
-	dc.w	$0333
-	dc.w	$0333	
-	dc.w	$0444
-	dc.w	$0444
-	dc.w	$0555
-	dc.w	$0555
-	dc.w	$0666
-	dc.w	$0666
-	dc.w	$0777
-	dc.w	$0777
-	dc.w	$0888
-	dc.w	$0888
-	dc.w	$0999
-	dc.w	$0999
-	dc.w	$0aaa
-	dc.w	$0aaa
-	dc.w	$0bbb
-	dc.w	$0bbb
-	dc.w	$0ccc
-	dc.w	$0ccc
-	dc.w	$0ddd
-	dc.w	$0ddd
-	dc.w	$0eee
-	dc.w	$0eee
-	dc.w	$0fff
-	dc.w	$0fff
+	dc.l	$00000000
+	dc.l	$00000444
+	dc.l	$00000888
+	dc.l	$00000ccc
+	dc.l	$01110000
+	dc.l	$01110444
+	dc.l	$01110888
+	dc.l	$01110ccc
+	dc.l	$02220000
+	dc.l	$02220444
+	dc.l	$02220888
+	dc.l	$02220ccc
+	dc.l	$03330000
+	dc.l	$03330444
+	dc.l	$03330888
+	dc.l	$03330ccc
+	dc.l	$04440000
+	dc.l	$04440444
+	dc.l	$04440888
+	dc.l	$04440ccc
+	dc.l	$05550000
+	dc.l	$05550444
+	dc.l	$05550888
+	dc.l	$05550ccc
+	dc.l	$06660000
+	dc.l	$06660444
+	dc.l	$06660888
+	dc.l	$06660ccc
+	dc.l	$07770000
+	dc.l	$07770444
+	dc.l	$07770888
+	dc.l	$07770ccc
+	dc.l	$08880000
+	dc.l	$08880444
+	dc.l	$08880888
+	dc.l	$08880ccc
+	dc.l	$09990000
+	dc.l	$09990444
+	dc.l	$09990888
+	dc.l	$09990ccc
+	dc.l	$0aaa0000
+	dc.l	$0aaa0444
+	dc.l	$0aaa0888
+	dc.l	$0aaa0ccc
+	dc.l	$0bbb0000
+	dc.l	$0bbb0444
+	dc.l	$0bbb0888
+	dc.l	$0bbb0ccc
+	dc.l	$0ccc0000
+	dc.l	$0ccc0444
+	dc.l	$0ccc0888
+	dc.l	$0ccc0ccc
+	dc.l	$0ddd0000
+	dc.l	$0ddd0444
+	dc.l	$0ddd0888
+	dc.l	$0ddd0ccc
+	dc.l	$0eee0000
+	dc.l	$0eee0444
+	dc.l	$0eee0888
+	dc.l	$0eee0ccc
+	dc.l	$0fff0000
+	dc.l	$0fff0444
+	dc.l	$0fff0888
+	dc.l	$0fff0ccc
 
 TextPos:
 	dc.w	0
@@ -1271,7 +1044,7 @@ DownCol:
 	dc.l	CA,CB,CC,CD,CE,CF,CG,CH,CI,CJ,CK,CL,CM,CN,CO,CP,CQ,CR,CS,CT,CU,CU1,CU2,CU3,CU4,CV,CW,CX
 	dc.l	CY,CX,CW,CV,CU4,CU3,CU2,CU1,CU,CT,CS,CR,CQ,CP,CO,CN,CM,CL,CK,CJ,CI,CH,CG,CF,CE,CD,CC,CB
 filenameVid:
-	dc.b 	"sc_hd.tmp",0
+	dc.b 	"sc.tmp",0
 	even
 filenameSnd:
 	dc.b 	"sc.iff",0
