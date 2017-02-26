@@ -6,10 +6,13 @@
 	xdef 	_Frames
 	xdef	_InterruptSub
 	xdef 	_DeinitSub
+	xdef	_WaitFrame
 	xref	_Fire_Init
 	xref	_Mapping_Init
 	xref	_Ham_Init
 	xref	_Ham8_Init
+	xref	_C2P_Init
+	xref	_C2P_ecs_Init
 	xref	_Hires_Init
 	xref	_Wolfenstein_Init
 	xref	_InterlaceCop
@@ -131,6 +134,19 @@ exit:
 
 	rts
 
+;--------------------------------------------------------------------	
+_WaitFrame:
+	btst	#0,$dff005
+	bne.b	_WaitFrame
+;	cmp.b	#$4,$dff006
+;	bne.b	_WaitFrame
+_WaitFrame1:
+	cmp.b	#$5,$dff006
+	bne.b	_WaitFrame1
+_WaitFrame2:
+	cmp.b	#$6,$dff006
+	bne.b	_WaitFrame2
+	rts
 ;--------------------------------------------------------------------	
 WaitRaster:			; wait for rasterline d0.w. Modifies d0-d2/a0
 	move.l	#$1ff00,d2
@@ -263,8 +279,10 @@ Effects:
 ;	dc.l 	_Fire_Init
 ;	dc.l 	_Mapping_Init
 ;	dc.l 	_Ham_Init
-	dc.l 	_Ham8_Init
+;	dc.l 	_Ham8_Init
 ;	dc.l 	_Hires_Init
+;	dc.l 	_C2P_Init
+	dc.l 	_C2P_ecs_Init
 	dc.l 	0
 	EVEN
 dosname:
