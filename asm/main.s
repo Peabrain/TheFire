@@ -279,10 +279,10 @@ Effects:
 ;	dc.l 	_Fire_Init
 ;	dc.l 	_Mapping_Init
 ;	dc.l 	_Ham_Init
-;	dc.l 	_Ham8_Init
+	dc.l 	_Ham8_Init
 ;	dc.l 	_Hires_Init
 ;	dc.l 	_C2P_Init
-	dc.l 	_C2P_ecs_Init
+;	dc.l 	_C2P_ecs_Init
 	dc.l 	0
 	EVEN
 dosname:
