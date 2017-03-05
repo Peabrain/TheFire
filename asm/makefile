@@ -13,9 +13,9 @@ OBJ = main.o blitterhelper.o ham8.o c2p.o ptplayer_noa4.s
 VC = vc
 VASM = vasmm68k_mot
 test.exe: $(OBJ) test.c
-	$(VC) +kick13 -O2 -notmpfile -nostdlib -o $(programm).exe $(OBJ)
+	$(VC) +aos68k -O2 -notmpfile -nostdlib -o $(programm).exe $(OBJ)
 %.o: %.s
-	$(VASM) -m68000 -spaces -Fhunk -phxass -x $< -o $@
+	$(VASM) -m68020 -spaces -Fhunk -phxass -x $< -o $@
 
 clean:
 	rm *.o

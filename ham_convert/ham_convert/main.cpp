@@ -160,14 +160,14 @@ int main(int argc, const char * argv[])
 //	convertSequence("cocoon", 0,2000, 2);
 	//	convertSequence("cocoon", 6000, 3);
 	//    convertSequence("test",1,2);
-//	convertSequence("sc", 6000, 10, 1);
+	convertSequence("sc", 7905, 100, 1);
 	//	convertSequence("cocoon_hd", 0, 11161, 1);
 //	convertSequence("ghost_hd", 0, 3235, 1);
 //	convertSequence("nvidia_hd", 0, 4260, 1);
 //	convertSequence("cataclysm_hd", 0, 3660, 1);
 //	convertSequence("hots_hd", 0, 2959, 1);
 //	convertSequence("sc_hd", 5000, 1, 2);
-	convertSequence(argv[1], atoi(argv[2]));
+//	convertSequence(argv[1], atoi(argv[2]));
 
 //	DCT dct;
 //	dct.main();

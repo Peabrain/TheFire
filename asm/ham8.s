@@ -143,6 +143,8 @@ _Ham8_Init:
 	move.l	a0,_DeinitSub
 	
 ;	bsr 	PlaySample
+
+	bsr 	LoadMyVidFile
 	rts
 ;---------------------------------
 _Ham8_Deinit:
@@ -324,7 +326,17 @@ DrawText:
 ;--------------------------------------------------------------------	
 RenderLoop:
 
-	bsr 	LoadMyVidFile
+;	bsr 	LoadMyVidFile
+
+	lea		pic,a0
+	move.l 	picindex,d0
+	mulu #ScreenWidth/8*ScreenHeight*2,d0
+	add.l 	d0,d0
+	add.l 	d0,d0
+	add.l	d0,a0
+	move.l	Screens,A1		; destination (planar)
+	jsr	_BEST_c2p
+
 	
 	move.l 	Screens,a3
 	lea 	pic,a2
@@ -356,7 +368,10 @@ RL1:
 
 	move.l 	picindex,d0	
 	addq 	#1,d0
-	move.l 	d0,picindex
+	cmp.l	#100,d0
+	bne	.nn
+	move.l	#0,d0
+.nn:	move.l 	d0,picindex
 
 	rts
 ;--------------------------------------------------------------------	
@@ -386,18 +401,19 @@ LoadMyVidFile:
 	mulu #ScreenWidth/8*ScreenHeight*2,d0
 	add.l 	d0,d0
 	add.l 	d0,d0
+	move.l	#0,d0
 	move.l 	d0,fileseek
 
-	move.l #ScreenWidth/8*ScreenHeight*8,d0
+	move.l #ScreenWidth/8*ScreenHeight*8*100,d0
 	move.l d0,filesize
 
 	move.l	#pic,d0
 ;	move.l	Screens,d0
 	move.l	d0,filedest
 
-	lea		pic,a0
-	move.l	Screens,A1		; destination (planar)
-	jsr	_BEST_c2p
+;	lea		pic,a0
+;	move.l	Screens,A1		; destination (planar)
+;	jsr	_BEST_c2p
 	
 	bsr		loadfile
 	rts
@@ -1061,6 +1077,7 @@ font8x8_basic:
 text:
 	incbin	text.txt
 	dc.b	0
+	section	pic,BSS_F
 pic:
-	ds.b 	(ScreenWidth/8*ScreenHeight*Planes)
+	ds.b 	(ScreenWidth/8*ScreenHeight*Planes)*100
 *********************************************************************
