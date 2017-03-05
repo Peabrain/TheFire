@@ -27,6 +27,12 @@
     <ClCompile Include="ham_convert\fft.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ham_convert\frame.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ham_convert\defines.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ham_convert\dct.h">
@@ -36,6 +42,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ham_convert\fft.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ham_convert\frame.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ham_convert\defines.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

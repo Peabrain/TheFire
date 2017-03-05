@@ -12,7 +12,8 @@
 #include <list>
 #include "dct.h"
 #include "fft.h"
-#include "exoquant.h"
+#include "frame.h"
+#include "defines.h"
 
 //#define CHEAP
 #define HAM8
@@ -41,112 +42,12 @@ typedef struct STATS
 	int copied_pattern;
 };
 STATS stats;
-float yuv_matrix[3][3] = {
-	{ 0.299		,0.587		,0.144 },
-	{ -0.14713	,-0.28886	,0.436 },
-	{ 0.615		,-0.51499	,-0.10001 }
-};
-float yuv_imatrix[3][3] = {
-	{ 1		,0			,1.13983 },
-	{ 1		,-0.39465	,-0.58060 },
-	{ 1		,2.03211	,0 }
-};
-
-typedef struct LUM
-{
-	float value;
-	int x, y;
-	unsigned int index;
-	int r, g, b;
-	unsigned int sortIdx;
-};
-int matrix[] = {
-	0b0000000000000000,
-	0b0000000000001000,
-	0b0000000000101000,
-	0b0000000100101000,
-	0b0100000100101000,
-	0b0110000100101000,
-	0b0110100100101000,
-	0b0110100101101000,
-	0b0110100101101001,
-	0b0110110101101001,
-	0b0111110101101001,
-	0b0111110101101011,
-	0b0111110111101011,
-	0b0111110111111011,
-	0b0111110111111111,
-	0b1111110111111111,
-	0b1111111111111111,
-};
-/**/
-/*int matrix[] = {
-0b0000000000000000,
-0b0000000000000001,
-0b0000010000000001,
-0b0000010000000101,
-0b0000010100000101,
-0b0000010100100101,
-0b1000010100100101,
-0b1000010110100101,
-0b1010010110100101,
-0b1010010110100111,
-0b1010110110100111,
-0b1010110110101111,
-0b1010111110101111,
-0b1010111110111111,
-0b1110111110111111,
-0b1111111110111111,
-0b1111111111111111,
-};
-/**/
-/*int matrix[] = {
-0b0000000000000000,
-0b0000000000100000,
-0b1000000000100000,
-0b1000000001100000,
-0b1001000001100000,
-0b1001000001100010,
-0b1001100001100010,
-0b1001100001100110,
-0b1001100101100110,
-0b1001101101100110,
-0b1001101101101110,
-0b1001111101101110,
-0b1001111101101111,
-0b1001111101111111,
-0b1101111101111111,
-0b1101111111111111,
-0b1111111111111111,
-};
-/**/
-typedef struct RGB
-{
-	unsigned char r, g, b, a;
-};
-
-typedef struct DATA
-{
-    int count;
-    std::string _in;
-    std::string _out;
-    void *mem;
-	void *chunky;
-	int stats;
-	bool success;
-};
 
 void convertSequence(const char *path,int i);
 void convertSequence(const char *path, int start, int Len, int zz);
-void convert(void *data);
-void processCompress(unsigned char *mem, unsigned char *ham, int w, int h, DATA *Data);
-void process(unsigned  char *mem, unsigned char *ham, int w, int h, DATA *Data);
-int changeColor(int c, int x, int y, unsigned char *pl, unsigned int bit, bool dith, unsigned char *chunky);
-int prepareIndexBuffer(LUM *lumlist, int *r_tab, int *g_tab, int *b_tab, int w, int h, unsigned char *mem);
+void processCompress(unsigned char *mem, unsigned char *ham, int w, int h);
 void doDCT(unsigned char*mem, int w, int h);
 void doFFT(unsigned char*mem);
-unsigned int getBlockCodeHori(unsigned char *mem);
-unsigned int getBlockCodeVert(unsigned char *mem);
 
 int main(int argc, const char * argv[])
 {
@@ -196,7 +97,6 @@ void convertSequence(const char *path,int start,int Len,int zz)
     {
         fclose(f2);
     }
-	DATA *i_frame = 0;
 	if(FILE *f2 = fopen(filename2,"a+b"))
     {
         int count = start,count2 = 0,j = 0;
@@ -205,7 +105,6 @@ void convertSequence(const char *path,int start,int Len,int zz)
         {
 			if (Len == -1 || count < len)
 			{
-				DATA data;
 				std::string filename;
 				std::string filename2;
 				char tm[256];
@@ -213,31 +112,17 @@ void convertSequence(const char *path,int start,int Len,int zz)
 				filename.append(tm);
 				sprintf(tm, "../asm/%s/%4.4i.bmp.tmp", path, count2++);
 				filename2.append(tm);
-				data._in = filename;
-				data._out = filename2;
-				data.stats = 0;
-				data.chunky = 0;
-				data.mem = 0;
-				convert(&data);
-				if (data.success)
+				FRAME *frame = new FRAME(filename,filename2);
+				if (frame->successful())
 				{
-					fwrite(data.mem, Width / 8 * Height * PLANES, 1, f2);
-					//						fwrite(data[i].chunky, Width * Height, 1, f2);
-
-					//						memccpy(CacheBuffer + CacheIdx * Width / 8 * Height * PLANES,data[i].mem,1, Width / 8 * Height * PLANES);
-					free(data.mem);
-					free(data.chunky);
-
-					stats.copied_pattern += data.stats;
-					stats.rendered_pattern += Width / CT_DIM * Height / CT_DIM;
-
-					//
-					//					t1[j++] = new std::thread(convert, &data[j]);
-					//					count += zz;
+					fwrite(frame->getMem(), Width / 8 * Height * PLANES, 1, f2);
+//					stats.copied_pattern += data.stats;
+//					stats.rendered_pattern += Width / CT_DIM * Height / CT_DIM;
 					printf("Converting %s\n", filename.c_str());
 					count += zz;
 				}
 				else running = false;
+				delete frame;
 			}
 			else
 				break;
@@ -245,263 +130,8 @@ void convertSequence(const char *path,int start,int Len,int zz)
         fclose(f2);
     }
 }
-void convert(void *data)
+void processCompress(unsigned char *mem, unsigned char *ham, int w, int h)
 {
-    DATA *Data = (DATA*)data;
-	Data->success = false;
-    if(FILE *f = fopen(Data->_in.c_str(),"rb"))
-    {
-        fseek(f, 0L, SEEK_END);
-        int sz = ftell(f);
-        fseek(f, 0L, SEEK_SET);
-
-        unsigned char *mem = (unsigned char*)malloc(sz);
-        Data->mem = (unsigned char*)malloc(Width / 8 * Height * PLANES);
-		Data->chunky = malloc(Width * Height);
-		memset(Data->mem,0, Width / 8 * Height * PLANES);
-        
-        fread(mem,sz,1,f);
-        
-        fclose(f);
-
-#ifdef CHEAP
-		processCheap(mem + 54, (unsigned char *)Data->mem, Width, Height, Data);
-#else
-//		process(mem + 54, (unsigned char *)Data->mem, Width, Height, Data);
-		processCompress(mem + 54, (unsigned char *)Data->mem, Width, Height, Data);
-#endif // CHEAP
-
-        free(mem);
-		Data->success = true;
-	}
-    else
-        printf("cannot find file %s\n",Data->_in.c_str());
-}
-void process(unsigned char *mem,unsigned char *ham,int w,int h, DATA *Data)
-{
-	unsigned char *chunky = (unsigned char*)Data->chunky;
-	unsigned int *blockCodeVert = 0;
-//	unsigned int *blockCodeHori = 0;
-	int colorIndexTab[0x1000];
-	LUM *lumlist = new LUM[Width * Height];
-#ifdef HAM8
-	int r_tab[64];
-	int g_tab[64];
-	int b_tab[64];
-#else
-	int r_tab[16];
-    int g_tab[16];
-    int b_tab[16];
-#endif
-	Data->stats = 0;
-	blockCodeVert = (unsigned int*)malloc(sizeof(unsigned int) * Width * 3 * (Height - (CT_DIM - 1)));
-//	blockCodeHori = (unsigned int*)malloc(sizeof(unsigned int) * Width / CT_DIM * Height);
-	unsigned char *mem_tmp = (unsigned char *)malloc(Width * Height * 3);
-
-	doDCT(mem,Width,Height);
-	doFFT(mem);
-//	for (int i = 0; i < Width * Height * 3; i++) mem[i] = mem[i] >> 4;
-
-/*	for (int i = 0; i < Width * 3 * (Height - (CT_DIM - 1)); i++) blockCodeVert[i] = getBlockCodeVert(mem_tmp + i);
-//	for (int i = 0; i < Width / CT_DIM * Height; i++) blockCodeHori[i] = getBlockCodeVert(mem_tmp + i * 8);
-
-	for (int yy = 0; yy < Height / CT_DIM; yy++)
-	{
-		int y = yy * CT_DIM;
-		for (int xx = 0; xx < Width / CT_DIM; xx++)
-		{
-			int x = xx * CT_DIM * 3;
-			int ScrPos = y * Width * 3 + x;
-			int ScrVPos = y * Width * 3 + x;
-			int ScrHPos = y * Width * 3 + xx;
-
-			for (int i = 0; i < yy * Width / CT_DIM + xx; i += CT_DIM * 3)
-			{
-				int j = 0;
-				for (j = 0; j < CT_DIM * 3; j++)
-				{
-					if (blockCodeVert[ScrVPos + j] != blockCodeVert[i + j])
-						break;
-				}
-				if (j == CT_DIM * 3)
-				{
-					Data->stats++;
-					break;
-					printf("");
-				}
-			}
-		}
-	}
-*/
-	int numOfColors = 0;
-	numOfColors = prepareIndexBuffer(lumlist, r_tab, g_tab, b_tab, w, h, mem);
-
-
-	int aktsetX = 0;
-	int ra = 0;
-	int ga = 0;
-	int ba = 0;
-	for(int y = 0;y < h;y++)
-    {
-		unsigned char bit = 0x80;
-		unsigned char pl[PLANES];
-		for (int i = 0; i < PLANES; i++) pl[i] = 0;
-
-		ba = 0;
-		ga = 0;
-		ra = 0;
-
-		for (int x = 0; x < w; x++)
-		{
-			int code = 0;
-#ifdef DITHER
-			bool dith = true;
-#else
-			bool dith = false;
-#endif
-
-			int b = (int)((unsigned int)mem[x * 3 + (Height - 1 - y) * 3 * w]);
-			int g = (int)((unsigned int)mem[x * 3 + (Height - 1 - y) * 3 * w + 1]);
-			int r = (int)((unsigned int)mem[x * 3 + (Height - 1 - y) * 3 * w + 2]);
-
-			int rd = abs(ra - r) * 3;// +50 + 25);
-			int gd = abs(ga - g) * 6;// -150);
-			int bd = abs(ba - b) * 1;// +50 + 25);
-
-			int ga_ = ga;
-			int ba_ = ba;
-			int ra_ = ra;
-
-			if (gd >= rd)
-			{
-				if (gd >= bd)
-				{
-					ga_ = g;
-					code = 3;
-				}
-				else
-				{
-					ba_ = b;
-					code = 1;
-				}
-			}
-			else
-			{
-				if (rd >= bd)
-				{
-					ra_ = r;
-					code = 2;
-				}
-				else
-				{
-					ba_ = b;
-					code = 1;
-				}
-			}
-
-			if (aktsetX < numOfColors && lumlist[aktsetX].x == x && lumlist[aktsetX].y == y)
-			{
-				int rd = abs(ra_ - r) * 3;// +50 + 25);
-				int gd = abs(ga_ - g) * 6;// -150);
-				int bd = abs(ba_ - b) * 1;// +50 + 25);
-				float lum0 = 3 * (float)rd + 6 * (float)gd + 1 * (float)bd;
-
-				ra = r_tab[lumlist[aktsetX].index];
-				ga = g_tab[lumlist[aktsetX].index];
-				ba = b_tab[lumlist[aktsetX].index];
-
-				rd = abs(ra - r) * 3;// +50 + 25);
-				gd = abs(ga - g) * 6;// -150);
-				bd = abs(ba - b) * 1;// +50 + 25);
-
-				float lum1 = 3 * (float)rd + 6 * (float)gd + 1 * (float)bd;
-				if (lum0 < lum1)
-				{
-					ra = ra_;
-					ga = ga_;
-					ba = ba_;
-				}
-				else
-				{
-					code = 0;
-#ifdef HAM8
-					b = lumlist[aktsetX].index << 2;
-#else
-					b = lumlist[aktsetX].index << 4;
-#endif
-					dith = false;
-				}
-				aktsetX++;
-			}
-
-
-			switch (code)
-			{
-			case 0:
-			{
-				int l = 0.299 * (float)ra + 0.587 * (float)ga + 0.114 * (float)ba;
-				changeColor(b, x, y, pl, bit, dith, chunky);
-			}break;
-			case 1:
-			{
-#ifdef HAM8
-				pl[0] |= bit;
-#else
-				pl[PLANES - 2] |= bit;
-#endif
-				int l = 0.299 * (float)ra + 0.587 * (float)ga + 0.114 * (float)ba;
-				ba = changeColor(b, x, y, pl, bit, dith, chunky);
-			}break;
-			case 2:
-			{
-#ifdef HAM8
-				pl[1] |= bit;
-#else
-				pl[PLANES - 1] |= bit;
-#endif
-				int l = 0.299 * (float)ra + 0.587 * (float)ga + 0.114 * (float)ba;
-				ra = changeColor(r, x, y, pl, bit, dith,chunky);
-			}break;
-			case 3:
-			{
-#ifdef HAM8
-				pl[0] |= bit;
-				pl[1] |= bit;
-#else
-				pl[PLANES - 2] |= bit;
-				pl[PLANES - 1] |= bit;
-#endif
-				int l = 0.299 * (float)ra + 0.587 * (float)ga + 0.114 * (float)ba;
-				ga = changeColor(g, x, y, pl, bit, dith, chunky);
-			}break;
-			}
-
-			bit >>= 1;
-			if (bit == 0)
-			{
-				bit = 0x80;
-				for (int i = 0; i < PLANES; i++)
-				{
-#ifdef WIN32
-					ham[Width / 8 * y + x / 8 + Width / 8 * Height * i] = pl[i];// _byteswap_ulong(pl[i]);
-//					ham[(Width / 8 * y + x / 8) * PLANES + i] = pl[i];// _byteswap_ulong(pl[i]);
-#else
-					ham[Width / 8 * y + x / 8 + Width / 8 * Height * i] = pl[i];// __builtin_bswap32(pl[i]);
-#endif
-					pl[i] = 0;
-				}
-			}
-		}
-    }
-	if (lumlist) delete [] lumlist;
-	free(mem_tmp);
-	free(blockCodeVert);
-//	free(blockCodeHori);
-}
-void processCompress(unsigned char *mem, unsigned char *ham, int w, int h, DATA *Data)
-{
-	Data->stats = 0;
-
 	for (int y = 0; y < h; y++)
 	{
 		for (int x = 0; x < w; x++)
@@ -513,152 +143,6 @@ void processCompress(unsigned char *mem, unsigned char *ham, int w, int h, DATA 
 			ham[y * w + x] = value >> 2;
 		}
 	}
-}
-int changeColor(int c,int x,int y,unsigned char *pl,unsigned int bit,bool dith,unsigned char *chunky)
-{
-    int m = c;
-#ifdef DITHER
-	if (dith)
-	{
-		int p = ((m) & 0x03) << 2;
-		if (matrix[p] & (1 << (((x) & 3) + (y & 3) * 4)))
-		{
-#ifdef HAM8
-			m += 4;
-#else
-			m += 16;
-#endif
-		}
-		if (m > 255) m = 255;
-		if (m < 0) m = 0;
-		c = m;
-	}
-	else
-		c = m & 0xfc;
-#endif
-//	c = m;
-	m >>= (2 + 8 - PLANES);
-	chunky[y * Width + x] = m;
-	for (int i = 0; i < PLANES - 2; i++)
-	{
-#ifdef HAM8
-		if (m & (1 << i)) pl[i + 2] |= bit;
-#else
-		if (m & (1 << i)) pl[i] |= bit;
-#endif
-	}
-    return c;
-}
-
-int prepareIndexBuffer(LUM *lumlist, int *r_tab,int *g_tab,int *b_tab,int w,int h,unsigned char *mem)
-{
-	int ra = 0;
-	int ga = 0;
-	int ba = 0;
-	int cop = 0;
-	int numOfColors = 0;
-	memset(lumlist, 0, sizeof(LUM) * Width * Height);
-	for (int yy = 0; yy < Height; yy++)
-	{
-		ra = 0;
-		ga = 0;
-		ba = 0;
-		for (int x = 0; x < w; x++, cop++)
-		{
-			int b = (int)((unsigned int)mem[x * 3 + (Height - 1 - yy) * 3 * w]);
-			int g = (int)((unsigned int)mem[x * 3 + (Height - 1 - yy) * 3 * w + 1]);
-			int r = (int)((unsigned int)mem[x * 3 + (Height - 1 - yy) * 3 * w + 2]);
-			int rd = abs(ra - r);
-			int gd = abs(ga - g);
-			int bd = abs(ba - b);
-
-			lumlist[cop].value = 0.299 * (float)rd + 0.587 * (float)gd + 0.114 * (float)bd;
-			lumlist[cop].r = r;
-			lumlist[cop].g = g;
-			lumlist[cop].b = b;
-			lumlist[cop].x = x;
-			lumlist[cop].y = yy;
-
-			ra = r;
-			ga = g;
-			ba = b;
-		}
-	}
-
-	unsigned char *tmprgb_buffer = new unsigned char[Height * Width * 4];
-	unsigned char *indexbuffer = new unsigned char[Height * Width * 4];
-	int			  *lumlist_idx = new int[Height * Width * 4];
-	for (int i = 0; i < cop; i++)
-	{
-		if (lumlist[i].value > 8)
-		{
-			lumlist_idx[numOfColors] = i;
-			tmprgb_buffer[numOfColors * 4] = lumlist[i].r;
-			tmprgb_buffer[numOfColors * 4 + 1] = lumlist[i].g;
-			tmprgb_buffer[numOfColors * 4 + 2] = lumlist[i].b;
-			tmprgb_buffer[numOfColors * 4 + 3] = 0;
-			numOfColors++;
-		}
-	}
-
-	exq_data *pExq = exq_init();
-	exq_no_transparency(pExq);
-	exq_feed(pExq, tmprgb_buffer, numOfColors);
-#ifdef HAM8
-	RGB pPalette[64];
-	for (int i = 0; i < 64; i++)
-	{
-		pPalette[i].r = (i << 2);
-		pPalette[i].g = (i << 2);
-		pPalette[i].b = (i << 2);
-		r_tab[i] = pPalette[i].r;
-		g_tab[i] = pPalette[i].g;
-		b_tab[i] = pPalette[i].b;
-	}
-	exq_set_palette(pExq, (unsigned char*)pPalette, 64);
-#else
-	RGB pPalette[16];
-	for (int i = 0; i < 16; i++)
-	{
-		pPalette[i].r = (i << 4);
-		pPalette[i].g = (i << 4);
-		pPalette[i].b = (i << 4);
-		r_tab[i] = pPalette[i].r;
-		g_tab[i] = pPalette[i].g;
-		b_tab[i] = pPalette[i].b;
-	}
-	exq_set_palette(pExq, (unsigned char*)pPalette, 16);
-#endif
-
-	exq_map_image(pExq, numOfColors, tmprgb_buffer, indexbuffer);
-
-	int lsIndex = -1;
-	int lsY = -1;
-	int gg = 0;
-	for (int i = 0; i < numOfColors; i++)
-	{
-		int nIndex = indexbuffer[i];
-		if (lsIndex != nIndex || lsY != lumlist[lumlist_idx[i]].y)
-		{
-			lumlist[gg] = lumlist[lumlist_idx[i]];
-			lumlist[gg].index = nIndex;
-			lsIndex = nIndex;
-			lsY = lumlist[lumlist_idx[i]].y;
-			gg++;
-		}
-	}
-	numOfColors = gg;
-	for (int i = 0; i < numOfColors; i++)
-	{
-		lumlist[i].sortIdx = (lumlist[i].x % CT_DIM) | ((lumlist[i].y % CT_DIM) << 8) | ((lumlist[i].x >> CT_DIM_BIT) << 16) | ((lumlist[i].y >> CT_DIM_BIT) << 24);
-	}
-
-	exq_free(pExq);
-	delete[]tmprgb_buffer;
-	delete[]indexbuffer;
-	delete[]lumlist_idx;
-
-	return numOfColors;
 }
 void doDCT(unsigned char*mem,int w,int h)
 {
@@ -974,22 +458,4 @@ void doFFT(unsigned char*mem)
 	}
 	free(yuv);
 #endif
-}
-unsigned int getBlockCodeVert(unsigned char *mem)
-{
-	unsigned int u = 0;
-	for (int i = 0; i < CT_DIM; i++)
-	{
-		u |= ((unsigned int)mem[i * Width * 3 / 8]) << (4 * i);
-	}
-	return u;
-}
-unsigned int getBlockCodeHori(unsigned char *mem)
-{
-	unsigned int u = 0;
-	for (int i = 0; i < CT_DIM; i++)
-	{
-		u |= ((unsigned int)mem[i]) << (4 * i);
-	}
-	return u;
 }
