@@ -11,14 +11,14 @@ Pl=0
 	xref	_loadNext	
 	xref	_Frames
 	xref	_DeinitSub
+	xref	_BEST_c2p
 	xref	AEnd
 	xref	pDOSBase	
 
-	section	ham8,CODE_P
+	section	ham8,CODE_F
 
 ;---------Bitplane init ----------
 _Ham8_Init:
-
 	lea	Bitplane1,a0
 	move.l	#ChipMemory,d0
 	move.l 	d0,Screens
@@ -142,7 +142,7 @@ _Ham8_Init:
 	move.l 	#_Ham8_Deinit,a0
 	move.l	a0,_DeinitSub
 	
-	bsr 	PlaySample
+;	bsr 	PlaySample
 	rts
 ;---------------------------------
 _Ham8_Deinit:
@@ -157,7 +157,7 @@ _Ham8_InnerLoop:
 	move.l	d0,d1
 	sub.l 	lastframe,d1
 	cmp.l	#2,d1
-	blt.b 	.norender
+;	blt.b 	.norender
 	add.l 	#2,lastframe
 
 	
@@ -168,13 +168,13 @@ _Ham8_InnerLoop:
 ;	move.l	#$ffffffff,(a0)
 	add.l	#ScreenWidth/8-4,a0
 ;	move.l	#$ffffffff,(a0)
-
-;	move.w 	#$0,$dff180	
 	
 	lea	Screens,a0
 	bsr	Switch
 	lea	Copper,a0
 	bsr	Switch
+
+	bra	te
 
 	move.w	DownColLast,d0
 	move.w	DownPosLast,d1
@@ -199,6 +199,9 @@ _Ham8_InnerLoop:
 
 .norender:
 	bsr.b	DrawText
+
+te:
+;	move.w 	#$f00,$dff180	
 
 	move.l	Copper+8,d0
 	move.w	d0,CopperAdr+6
@@ -334,7 +337,7 @@ RL0:
 ;	move.l d0,(a0)+
 ;	dbf 	d7,RL0
 
-	bsr 	LoadMySndFile
+;	bsr 	LoadMySndFile
 
 	lea 	pic,a0
 	move.l	SndPos,d0
@@ -388,9 +391,13 @@ LoadMyVidFile:
 	move.l #ScreenWidth/8*ScreenHeight*8,d0
 	move.l d0,filesize
 
-;	move.l	#pic,d0
-	move.l	Screens,d0
+	move.l	#pic,d0
+;	move.l	Screens,d0
 	move.l	d0,filedest
+
+	lea		pic,a0
+	move.l	Screens,A1		; destination (planar)
+	jsr	_BEST_c2p
 	
 	bsr		loadfile
 	rts
@@ -482,8 +489,8 @@ down_pic:
 ; display dimensions
 DISPW           equ     ScreenWidth
 DISPH           equ     ScreenHeight
-HSTART          equ     129+(256-DISPW)/4-64
-HEND 	        equ     HSTART+DISPW+32-$100
+HSTART          equ     129+(256-DISPW)/4-32
+HEND 	        equ     HSTART+DISPW+64-$100
 VSTART          equ     36+(256-ScreenHeight)/2-8
 VEND            equ     VSTART+DISPH
 DFETCHSTART     equ     HSTART/2
@@ -705,10 +712,6 @@ Copper1:
 	dc.w	$0102,$0044
 	dc.w	$0104,$0200
 Bitplane1:
-	dc.w	$00e0,$0000
-	dc.w	$00e2,$0000
-	dc.w	$00e4,$0000
-	dc.w	$00e6,$0000
 	dc.w	$00e8,$0000
 	dc.w	$00ea,$0000
 	dc.w	$00ec,$0000
@@ -721,6 +724,10 @@ Bitplane1:
 	dc.w	$00fa,$0000
 	dc.w	$00fc,$0000
 	dc.w	$00fe,$0000
+	dc.w	$00e0,$0000
+	dc.w	$00e2,$0000
+	dc.w	$00e4,$0000
+	dc.w	$00e6,$0000
 
 	dc.w	$0106,$0020
 	dc.w	$0007+(VSTART<<8),$fffe
@@ -745,10 +752,6 @@ Copper2:
 	dc.w	$0102,$0044
 	dc.w	$0104,$0200
 Bitplane2:
-	dc.w	$00e0,$0000
-	dc.w	$00e2,$0000
-	dc.w	$00e4,$0000
-	dc.w	$00e6,$0000
 	dc.w	$00e8,$0000
 	dc.w	$00ea,$0000
 	dc.w	$00ec,$0000
@@ -761,6 +764,10 @@ Bitplane2:
 	dc.w	$00fa,$0000
 	dc.w	$00fc,$0000
 	dc.w	$00fe,$0000
+	dc.w	$00e0,$0000
+	dc.w	$00e2,$0000
+	dc.w	$00e4,$0000
+	dc.w	$00e6,$0000
 
 	dc.w	$0106,$0020
 	dc.w	$0007+(VSTART<<8),$fffe
@@ -785,10 +792,6 @@ Copper3:
 	dc.w	$0102,$0044
 	dc.w	$0104,$0200
 Bitplane3:
-	dc.w	$00e0,$0000
-	dc.w	$00e2,$0000
-	dc.w	$00e4,$0000
-	dc.w	$00e6,$0000
 	dc.w	$00e8,$0000
 	dc.w	$00ea,$0000
 	dc.w	$00ec,$0000
@@ -801,6 +804,10 @@ Bitplane3:
 	dc.w	$00fa,$0000
 	dc.w	$00fc,$0000
 	dc.w	$00fe,$0000
+	dc.w	$00e0,$0000
+	dc.w	$00e2,$0000
+	dc.w	$00e4,$0000
+	dc.w	$00e6,$0000
 
 	dc.w	$0106,$0020
 	dc.w	$0007+(VSTART<<8),$fffe
@@ -942,7 +949,7 @@ pic_top:
 SoundData:                       ; Audio data must be in Chip memory
 	ds.b	22096
 ;--------------------------------------------------------------------
-	section	data,DATA_P
+	section	data,DATA_F
 Copper:
 	dc.l	Copper1,Copper2,Copper3
 Screens:

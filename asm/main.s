@@ -24,7 +24,7 @@
 	xref 	mt_Enable
 	xref	pDOSBase	
 *********************************************************************
-	section	main,CODE_P
+	section	main,CODE_F
 Init:
 
 	move.l	4.w,a6		; execbase
@@ -86,16 +86,13 @@ mainloop:
 	cmp.b	#$5,$dff006
 	bne.b	.wframe2
 
+	btst	#6,$bfe001
+	beq.w	exit
+
+
 	move.w 	EffectNext,d0
 	cmp.w 	#0,d0
 	beq.b 	.nonext
-	move.l 	_DeinitSub,a0
-	cmp.l 	#0,a0
-	beq.b 	.nnn
-	move.l	#CopperBase,d0
-	jsr		(a0)
-	move.l 	#0,_DeinitSub
-.nnn:
 	bsr.w 	NextEffect
 ;	move.b    #1,mt_Enable
 .nonext:
@@ -109,12 +106,14 @@ lll:
 	cmp.w 	#0,AEnd
 	beq.b 	mainloop
 exit:
-.wframe_:
-	btst	#0,$dff005
-	bne.b	.wframe_
-.wframe2_:
-	cmp.b	#$5,$dff006
-	bne.b	.wframe2_
+	move.l 	_DeinitSub,a0
+	cmp.l 	#0,a0
+	beq.b 	.nnn
+	move.l	#CopperBase,d0
+	jsr		(a0)
+	move.l 	#0,_DeinitSub
+.nnn:
+	bsr	_WaitFrame
 	
 	; mt_remove_cia(a6=CUSTOM)
 	lea 	CUSTOM,a6
@@ -166,18 +165,18 @@ IntLevel3:
 	bne.w	.blit_handle
 	btst	#5,d0
 	beq.w	IntLevel3_end
-	btst	#6,$bfe001
-	bne.w	.noend
-	cmp.w 	#1,MouseLast
-	beq.b 	.noend1
-	cmp.w 	#0,EffectNext
-	bne.b 	.noend1
-	move.w 	#1,MouseLast
-	bsr NextEffectInit
-	bra 	.ll
-.noend:
-	move.w 	#0,MouseLast
-.noend1:
+;	btst	#6,$bfe001
+;	bne.w	.noend
+;	cmp.w 	#1,MouseLast
+;	beq.b 	.noend1
+;	cmp.w 	#0,EffectNext
+;	bne.b 	.noend1
+;	move.w 	#1,MouseLast
+;	bsr NextEffectInit
+;	bra 	.ll
+;.noend:
+;	move.w 	#0,MouseLast
+;.noend1:
 	tst.w 	_BEnd
 	bne.b 	.ll
 	move.l 	_InterlaceFlag,d0
@@ -219,6 +218,13 @@ IntLevel3_end:
 	rte
 ;--------------------------------------------------------------------	
 NextEffect:
+	move.l 	_DeinitSub,a0
+	cmp.l 	#0,a0
+	beq.b 	.nnn
+	move.l	#CopperBase,d0
+	jsr		(a0)
+	move.l 	#0,_DeinitSub
+.nnn:
 	move.w	EffectCount,d0
 	lsl.w 	#2,d0
 	lea 	Effects,a0
@@ -247,7 +253,7 @@ CopperBase:
 	dc.w	$0180,$0000
 	dc.w	$ffff,$fffe
 ;--------------------------------------------------------------------	
-	section	data,DATA_P
+	section	data,DATA_F
 org_copper:
 	dc.l	0
 org_intena:

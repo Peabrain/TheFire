@@ -139,9 +139,9 @@ typedef struct DATA
 void convertSequence(const char *path,int i);
 void convertSequence(const char *path, int start, int Len, int zz);
 void convert(void *data);
-void processCheap(unsigned char *mem, unsigned char *ham, int w, int h, DATA *Data);
+void processCompress(unsigned char *mem, unsigned char *ham, int w, int h, DATA *Data);
 void process(unsigned  char *mem, unsigned char *ham, int w, int h, DATA *Data);
-int changeColor(int c, int x, int y, unsigned char *pl, unsigned int bit, int lum, bool dith, unsigned char *chunky);
+int changeColor(int c, int x, int y, unsigned char *pl, unsigned int bit, bool dith, unsigned char *chunky);
 int prepareIndexBuffer(LUM *lumlist, int *r_tab, int *g_tab, int *b_tab, int w, int h, unsigned char *mem);
 void doDCT(unsigned char*mem, int w, int h);
 void doFFT(unsigned char*mem);
@@ -160,14 +160,14 @@ int main(int argc, const char * argv[])
 //	convertSequence("cocoon", 0,2000, 2);
 	//	convertSequence("cocoon", 6000, 3);
 	//    convertSequence("test",1,2);
-//	convertSequence("sc", 0, 9397, 1);
+//	convertSequence("sc", 6000, 10, 1);
 	//	convertSequence("cocoon_hd", 0, 11161, 1);
 //	convertSequence("ghost_hd", 0, 3235, 1);
 //	convertSequence("nvidia_hd", 0, 4260, 1);
 //	convertSequence("cataclysm_hd", 0, 3660, 1);
 //	convertSequence("hots_hd", 0, 2959, 1);
 //	convertSequence("sc_hd", 5000, 1, 2);
-	convertSequence(argv[1],atoi(argv[2]));
+	convertSequence(argv[1], atoi(argv[2]));
 
 //	DCT dct;
 //	dct.main();
@@ -199,75 +199,47 @@ void convertSequence(const char *path,int start,int Len,int zz)
     if(FILE *f2 = fopen(filename2,"a+b"))
     {
         int count = start,count2 = 0,j = 0;
-        std::thread *t1[THREADS];
-        DATA data[THREADS];
-        for(int i = 0;i < THREADS;i++)
-        {
-            t1[i]= 0;
-        }
+//        std::thread *t1[THREADS];
         while(running)
         {
-			for (int i = 0; i < THREADS; i++)
+			if (Len == -1 || count < len)
 			{
-				if (Len == -1 || count < len)
+				DATA data;
+				std::string filename;
+				std::string filename2;
+				char tm[256];
+				sprintf(tm, "../../data/%s/%4.4i.bmp", path, count);
+				filename.append(tm);
+				sprintf(tm, "../asm/%s/%4.4i.bmp.tmp", path, count2++);
+				filename2.append(tm);
+				data._in = filename;
+				data._out = filename2;
+				data.stats = 0;
+				data.chunky = 0;
+				data.mem = 0;
+				convert(&data);
+				if (data.success)
 				{
-					std::string filename;
-					std::string filename2;
-					char tm[256];
-					sprintf(tm, "../../data/%s/%4.4i.bmp", path, count);
-					filename.append(tm);
-					sprintf(tm, "../asm/%s/%4.4i.bmp.tmp", path, count2++);
-					filename2.append(tm);
-					data[j]._in = filename;
-					data[j]._out = filename2;
-					data[j].stats = 0;
-					data[j].chunky = 0;
-					data[j].mem = 0;
-					t1[j++] = new std::thread(convert, &data[j]);
+					fwrite(data.mem, Width / 8 * Height * PLANES, 1, f2);
+					//						fwrite(data[i].chunky, Width * Height, 1, f2);
+
+					//						memccpy(CacheBuffer + CacheIdx * Width / 8 * Height * PLANES,data[i].mem,1, Width / 8 * Height * PLANES);
+					free(data.mem);
+					free(data.chunky);
+
+					stats.copied_pattern += data.stats;
+					stats.rendered_pattern += Width / CT_DIM * Height / CT_DIM;
+
+					//
+					//					t1[j++] = new std::thread(convert, &data[j]);
+					//					count += zz;
+					printf("Converting %s\n", filename.c_str());
 					count += zz;
 				}
-				else
-					break;
+				else running = false;
 			}
-            if(j == THREADS || count >= len)
-            {
-				if (count >= len && len != -1) running = false;
-				for (int i = 0; i < THREADS; i++)
-				{
-					if (t1[i] != 0)
-						t1[i]->join();
-				}
-				for(int i = 0;i < THREADS;i++)
-                {
-                    if(t1[i] != 0)
-                    {
-						if (data[i].success == false)
-						{
-							running = false;
-							break;
-						}
-                        t1[i]= 0;
-
-						fwrite(data[i].mem, Width / 8 * Height * PLANES, 1, f2);
-//						fwrite(data[i].chunky, Width * Height, 1, f2);
-
-//						memccpy(CacheBuffer + CacheIdx * Width / 8 * Height * PLANES,data[i].mem,1, Width / 8 * Height * PLANES);
-                        free(data[i].mem);
-						free(data[i].chunky);
-					
-						stats.copied_pattern += data[i].stats;
-						stats.rendered_pattern += Width / CT_DIM * Height / CT_DIM;
-						printf("open file %s , double %ix%i : %i\n", data[i]._in.c_str(), CT_DIM, CT_DIM, data[i].stats);
-						CacheIdx = (CacheIdx + 1) % CACHES;
-					}
-                }
-				for (int i = 0; i < THREADS; i++)
-				{
-					if (t1[i] != 0)
-						t1[i] = 0;
-				}
-				j = 0;
-            }
+			else
+				break;
         }
         fclose(f2);
     }
@@ -294,7 +266,8 @@ void convert(void *data)
 #ifdef CHEAP
 		processCheap(mem + 54, (unsigned char *)Data->mem, Width, Height, Data);
 #else
-		process(mem + 54, (unsigned char *)Data->mem, Width, Height, Data);
+//		process(mem + 54, (unsigned char *)Data->mem, Width, Height, Data);
+		processCompress(mem + 54, (unsigned char *)Data->mem, Width, Height, Data);
 #endif // CHEAP
 
         free(mem);
@@ -390,9 +363,9 @@ void process(unsigned char *mem,unsigned char *ham,int w,int h, DATA *Data)
 			int g = (int)((unsigned int)mem[x * 3 + (Height - 1 - y) * 3 * w + 1]);
 			int r = (int)((unsigned int)mem[x * 3 + (Height - 1 - y) * 3 * w + 2]);
 
-			int rd = abs(ra - r) *(299);// +50 + 25);
-			int gd = abs(ga - g) *(587);// -150);
-			int bd = abs(ba - b) *(114);// +50 + 25);
+			int rd = abs(ra - r) * 3;// +50 + 25);
+			int gd = abs(ga - g) * 6;// -150);
+			int bd = abs(ba - b) * 1;// +50 + 25);
 
 			int ga_ = ga;
 			int ba_ = ba;
@@ -427,20 +400,20 @@ void process(unsigned char *mem,unsigned char *ham,int w,int h, DATA *Data)
 
 			if (aktsetX < numOfColors && lumlist[aktsetX].x == x && lumlist[aktsetX].y == y)
 			{
-				int rd = abs(ra_ - r) * (299);// +50 + 25);
-				int gd = abs(ga_ - g) * (587);// -150);
-				int bd = abs(ba_ - b) * (114);// +50 + 25);
-				float lum0 = 0.299 * (float)rd + 0.587 * (float)gd + 0.114 * (float)bd;
+				int rd = abs(ra_ - r) * 3;// +50 + 25);
+				int gd = abs(ga_ - g) * 6;// -150);
+				int bd = abs(ba_ - b) * 1;// +50 + 25);
+				float lum0 = 3 * (float)rd + 6 * (float)gd + 1 * (float)bd;
 
 				ra = r_tab[lumlist[aktsetX].index];
 				ga = g_tab[lumlist[aktsetX].index];
 				ba = b_tab[lumlist[aktsetX].index];
 
-				rd = abs(ra - r) * (299);// +50 + 25);
-				gd = abs(ga - g) * (587);// -150);
-				bd = abs(ba - b) * (114);// +50 + 25);
+				rd = abs(ra - r) * 3;// +50 + 25);
+				gd = abs(ga - g) * 6;// -150);
+				bd = abs(ba - b) * 1;// +50 + 25);
 
-				float lum1 = 0.299 * (float)rd + 0.587 * (float)gd + 0.114 * (float)bd;
+				float lum1 = 3 * (float)rd + 6 * (float)gd + 1 * (float)bd;
 				if (lum0 < lum1)
 				{
 					ra = ra_;
@@ -466,7 +439,7 @@ void process(unsigned char *mem,unsigned char *ham,int w,int h, DATA *Data)
 			case 0:
 			{
 				int l = 0.299 * (float)ra + 0.587 * (float)ga + 0.114 * (float)ba;
-				changeColor(b, x, y, pl, bit, l, dith, chunky);
+				changeColor(b, x, y, pl, bit, dith, chunky);
 			}break;
 			case 1:
 			{
@@ -476,7 +449,7 @@ void process(unsigned char *mem,unsigned char *ham,int w,int h, DATA *Data)
 				pl[PLANES - 2] |= bit;
 #endif
 				int l = 0.299 * (float)ra + 0.587 * (float)ga + 0.114 * (float)ba;
-				ba = changeColor(b, x, y, pl, bit, l, dith, chunky);
+				ba = changeColor(b, x, y, pl, bit, dith, chunky);
 			}break;
 			case 2:
 			{
@@ -486,7 +459,7 @@ void process(unsigned char *mem,unsigned char *ham,int w,int h, DATA *Data)
 				pl[PLANES - 1] |= bit;
 #endif
 				int l = 0.299 * (float)ra + 0.587 * (float)ga + 0.114 * (float)ba;
-				ra = changeColor(r, x, y, pl, bit, l, dith,chunky);
+				ra = changeColor(r, x, y, pl, bit, dith,chunky);
 			}break;
 			case 3:
 			{
@@ -498,7 +471,7 @@ void process(unsigned char *mem,unsigned char *ham,int w,int h, DATA *Data)
 				pl[PLANES - 1] |= bit;
 #endif
 				int l = 0.299 * (float)ra + 0.587 * (float)ga + 0.114 * (float)ba;
-				ga = changeColor(g, x, y, pl, bit, l, dith, chunky);
+				ga = changeColor(g, x, y, pl, bit, dith, chunky);
 			}break;
 			}
 
@@ -524,39 +497,23 @@ void process(unsigned char *mem,unsigned char *ham,int w,int h, DATA *Data)
 	free(blockCodeVert);
 //	free(blockCodeHori);
 }
-void processCheap(unsigned char *mem, unsigned char *ham, int w, int h, DATA *Data)
+void processCompress(unsigned char *mem, unsigned char *ham, int w, int h, DATA *Data)
 {
 	Data->stats = 0;
-	unsigned char *chunky = (unsigned char*)malloc(h * w);
-	memset(chunky, 0, h * w);
-	for (int i = 0; i < w / 2 * h; i++)
-	{
-		unsigned int b = ((unsigned int)mem[i * 3 * 2] + (unsigned int)mem[i * 3 * 2 + 1]) >> 1;
-		unsigned int g = ((unsigned int)mem[(i * 3 + 1) * 2] + (unsigned int)mem[(i * 3 + 1) * 2 + 1]) >> 1;
-		unsigned int r = ((unsigned int)mem[(i * 3 + 2) * 2] + (unsigned int)mem[(i * 3 + 2) * 2 + 1]) >> 1;
-		chunky[i * 2] = (g >> 2) | 0xc0;
-		chunky[i * 2 + 1] = (b >> 5) | ((r >> 2) & 0x38);
-	}
 
-	for (int i = 0; i < w / 8 * h; i++)
+	for (int y = 0; y < h; y++)
 	{
-		unsigned char bit = 0x80;
-		for (int j = 0; j < 8; j++, bit >>= 1)
+		for (int x = 0; x < w; x++)
 		{
-			for (int k = 0; k < PLANES; k++)
-			{
-#ifdef WIN32
-				if(chunky[i * 8 + j] & (1 << k)) ham[i + Width / 8 * Height * k] |= bit;// _byteswap_ulong(pl[i]);
-																			//					ham[(Width / 8 * y + x / 8) * PLANES + i] = pl[i];// _byteswap_ulong(pl[i]);
-#else
-				ham[Width / 8 * y + x / 8 + Width / 8 * Height * i] = pl[i];// __builtin_bswap32(pl[i]);
-#endif
-			}
+			int b = (int)((unsigned int)mem[x * 3 + (h - 1 - y) * 3 * w]);
+			int g = (int)((unsigned int)mem[x * 3 + (h - 1 - y) * 3 * w + 1]);
+			int r = (int)((unsigned int)mem[x * 3 + (h - 1 - y) * 3 * w + 2]);
+			int value = (0.299 * (float)r + 0.587 * (float)g + 0.114 * (float)b);
+			ham[y * w + x] = value >> 2;
 		}
 	}
-	free(chunky);
 }
-int changeColor(int c,int x,int y,unsigned char *pl,unsigned int bit, int lum,bool dith,unsigned char *chunky)
+int changeColor(int c,int x,int y,unsigned char *pl,unsigned int bit,bool dith,unsigned char *chunky)
 {
     int m = c;
 #ifdef DITHER

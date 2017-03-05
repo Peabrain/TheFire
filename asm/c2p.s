@@ -1,7 +1,7 @@
 ; mc68030		; c'est pas du 68000 !
 
-Modulo = $2800
-Length = $A00		; number of longwords per BitPlan to write
+Modulo = 320/8*192
+Length = Modulo/4		; number of longwords per BitPlan to write
 
 ; static/dependent BitPlanes version for one chip ram area
 	
@@ -222,7 +222,7 @@ LoopBC2P
 	or.l	D3,D1
 	move.l	d4,d3
 	and.l	(A0)+,D3
-	and.l	D3,D4
+;	and.l	D3,D4
 	move.l	A4,(A1)			; 0.04 (perfect place) chipram write -> bit plane 6
 	sub.l	A2,A1			; A1+Modulo*4 (right place)
 	and.l	(A0)+,D4
