@@ -196,7 +196,8 @@ void convertSequence(const char *path,int start,int Len,int zz)
     {
         fclose(f2);
     }
-    if(FILE *f2 = fopen(filename2,"a+b"))
+	DATA *i_frame = 0;
+	if(FILE *f2 = fopen(filename2,"a+b"))
     {
         int count = start,count2 = 0,j = 0;
 //        std::thread *t1[THREADS];
