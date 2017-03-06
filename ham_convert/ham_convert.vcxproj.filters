@@ -33,6 +33,12 @@
     <ClCompile Include="ham_convert\defines.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ham_convert\pframe.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ham_convert\oframe.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ham_convert\dct.h">
@@ -48,6 +54,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ham_convert\defines.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ham_convert\pframe.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ham_convert\oframe.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -12,7 +12,7 @@
 #include <list>
 #include "dct.h"
 #include "fft.h"
-#include "frame.h"
+#include "pframe.h"
 #include "defines.h"
 
 //#define CHEAP
@@ -112,9 +112,10 @@ void convertSequence(const char *path,int start,int Len,int zz)
 				filename.append(tm);
 				sprintf(tm, "../asm/%s/%4.4i.bmp.tmp", path, count2++);
 				filename2.append(tm);
-				FRAME *frame = new FRAME(filename,filename2);
+				PFRAME *frame = new PFRAME(filename,filename2);
 				if (frame->successful())
 				{
+					frame->convert();
 					fwrite(frame->getMem(), Width / 8 * Height * PLANES, 1, f2);
 //					stats.copied_pattern += data.stats;
 //					stats.rendered_pattern += Width / CT_DIM * Height / CT_DIM;
@@ -129,20 +130,6 @@ void convertSequence(const char *path,int start,int Len,int zz)
         }
         fclose(f2);
     }
-}
-void processCompress(unsigned char *mem, unsigned char *ham, int w, int h)
-{
-	for (int y = 0; y < h; y++)
-	{
-		for (int x = 0; x < w; x++)
-		{
-			int b = (int)((unsigned int)mem[x * 3 + (h - 1 - y) * 3 * w]);
-			int g = (int)((unsigned int)mem[x * 3 + (h - 1 - y) * 3 * w + 1]);
-			int r = (int)((unsigned int)mem[x * 3 + (h - 1 - y) * 3 * w + 2]);
-			int value = (0.299 * (float)r + 0.587 * (float)g + 0.114 * (float)b);
-			ham[y * w + x] = value >> 2;
-		}
-	}
 }
 void doDCT(unsigned char*mem,int w,int h)
 {

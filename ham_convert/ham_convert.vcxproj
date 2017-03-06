@@ -148,6 +148,8 @@
     <ClCompile Include="ham_convert\fft.cpp" />
     <ClCompile Include="ham_convert\frame.cpp" />
     <ClCompile Include="ham_convert\main.cpp" />
+    <ClCompile Include="ham_convert\oframe.cpp" />
+    <ClCompile Include="ham_convert\pframe.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ham_convert\dct.h" />
@@ -155,6 +157,8 @@
     <ClInclude Include="ham_convert\exoquant.h" />
     <ClInclude Include="ham_convert\fft.h" />
     <ClInclude Include="ham_convert\frame.h" />
+    <ClInclude Include="ham_convert\oframe.h" />
+    <ClInclude Include="ham_convert\pframe.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
