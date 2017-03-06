@@ -12,6 +12,7 @@
 #include <list>
 #include "dct.h"
 #include "fft.h"
+#include "iframe.h"
 #include "pframe.h"
 #include "defines.h"
 
@@ -45,7 +46,6 @@ STATS stats;
 
 void convertSequence(const char *path,int i);
 void convertSequence(const char *path, int start, int Len, int zz);
-void processCompress(unsigned char *mem, unsigned char *ham, int w, int h);
 void doDCT(unsigned char*mem, int w, int h);
 void doFFT(unsigned char*mem);
 
@@ -61,7 +61,7 @@ int main(int argc, const char * argv[])
 //	convertSequence("cocoon", 0,2000, 2);
 	//	convertSequence("cocoon", 6000, 3);
 	//    convertSequence("test",1,2);
-	convertSequence("sc", 7905, 100, 1);
+	convertSequence("sc", 7906, 2, 1);
 	//	convertSequence("cocoon_hd", 0, 11161, 1);
 //	convertSequence("ghost_hd", 0, 3235, 1);
 //	convertSequence("nvidia_hd", 0, 4260, 1);
@@ -101,7 +101,8 @@ void convertSequence(const char *path,int start,int Len,int zz)
     {
         int count = start,count2 = 0,j = 0;
 //        std::thread *t1[THREADS];
-        while(running)
+		IFRAME *iframe = 0;
+		while(running)
         {
 			if (Len == -1 || count < len)
 			{
@@ -112,10 +113,27 @@ void convertSequence(const char *path,int start,int Len,int zz)
 				filename.append(tm);
 				sprintf(tm, "../asm/%s/%4.4i.bmp.tmp", path, count2++);
 				filename2.append(tm);
-				PFRAME *frame = new PFRAME(filename,filename2);
+				FRAME *frame = 0;
+				if (!iframe)
+				{
+					iframe = new IFRAME(filename, filename2);
+					frame = iframe;
+				}
+				else
+					frame = new PFRAME(filename, filename2);
 				if (frame->successful())
 				{
-					frame->convert();
+					switch (frame->getType())
+					{
+					case FRAME::TYPE::pFrame:
+					{
+						((PFRAME*)frame)->convert(iframe);
+					}break;
+					case FRAME::TYPE::iFrame:
+					{
+						frame->convert();
+					}break;
+					}
 					fwrite(frame->getMem(), Width / 8 * Height * PLANES, 1, f2);
 //					stats.copied_pattern += data.stats;
 //					stats.rendered_pattern += Width / CT_DIM * Height / CT_DIM;
@@ -123,11 +141,12 @@ void convertSequence(const char *path,int start,int Len,int zz)
 					count += zz;
 				}
 				else running = false;
-				delete frame;
+				if(frame->getType() != FRAME::TYPE::iFrame) delete frame;
 			}
 			else
 				break;
         }
+		if (iframe) delete iframe;
         fclose(f2);
     }
 }

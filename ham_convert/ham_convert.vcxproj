@@ -147,9 +147,11 @@
     <ClCompile Include="ham_convert\exoquant.cpp" />
     <ClCompile Include="ham_convert\fft.cpp" />
     <ClCompile Include="ham_convert\frame.cpp" />
+    <ClCompile Include="ham_convert\iframe.cpp" />
     <ClCompile Include="ham_convert\main.cpp" />
     <ClCompile Include="ham_convert\oframe.cpp" />
     <ClCompile Include="ham_convert\pframe.cpp" />
+    <ClCompile Include="ham_convert\yuv_buffer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ham_convert\dct.h" />
@@ -157,8 +159,10 @@
     <ClInclude Include="ham_convert\exoquant.h" />
     <ClInclude Include="ham_convert\fft.h" />
     <ClInclude Include="ham_convert\frame.h" />
+    <ClInclude Include="ham_convert\iframe.h" />
     <ClInclude Include="ham_convert\oframe.h" />
     <ClInclude Include="ham_convert\pframe.h" />
+    <ClInclude Include="ham_convert\yuv_buffer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

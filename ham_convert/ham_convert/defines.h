@@ -2,6 +2,7 @@
 #define __DEFINES_H
 #include <iostream>
 #include <string.h>
+#include "yuv_buffer.h"
 
 #define PLANES 8
 #define Width  320
