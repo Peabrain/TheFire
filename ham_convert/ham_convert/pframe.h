@@ -10,7 +10,7 @@ public:
 	virtual ~PFRAME();
 
 	void convert();
-	void convert(IFRAME *iframe);
+	int convert(IFRAME *iframe);
 private:
 	void process(unsigned  char *mem, int w, int h);
 

@@ -61,7 +61,7 @@ int main(int argc, const char * argv[])
 //	convertSequence("cocoon", 0,2000, 2);
 	//	convertSequence("cocoon", 6000, 3);
 	//    convertSequence("test",1,2);
-	convertSequence("sc", 7906, 2, 1);
+	convertSequence("sc", 7906, 5, 1);
 	//	convertSequence("cocoon_hd", 0, 11161, 1);
 //	convertSequence("ghost_hd", 0, 3235, 1);
 //	convertSequence("nvidia_hd", 0, 4260, 1);
@@ -90,6 +90,8 @@ void convertSequence(const char *path,int start,int Len,int zz)
 	int len = start + Len;
 	bool running = true;
     char filename2[256];
+	int pre = 0;
+	int ren = 0;
 
 	memset(CacheBuffer, 0, Width / 8 * Height * PLANES * CACHES);
     sprintf(filename2,"../asm/%s.tmp",path);
@@ -127,11 +129,13 @@ void convertSequence(const char *path,int start,int Len,int zz)
 					{
 					case FRAME::TYPE::pFrame:
 					{
-						((PFRAME*)frame)->convert(iframe);
+						pre += ((PFRAME*)frame)->convert(iframe);
+						ren += Width * Height / BLOCK_SIZE_SQ;
 					}break;
 					case FRAME::TYPE::iFrame:
 					{
 						frame->convert();
+						ren += Width * Height / BLOCK_SIZE_SQ;
 					}break;
 					}
 					fwrite(frame->getMem(), Width / 8 * Height * PLANES, 1, f2);
@@ -149,6 +153,7 @@ void convertSequence(const char *path,int start,int Len,int zz)
 		if (iframe) delete iframe;
         fclose(f2);
     }
+	printf("pre = %i/%i\n", pre, ren);
 }
 void doDCT(unsigned char*mem,int w,int h)
 {

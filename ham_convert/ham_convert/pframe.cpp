@@ -1,3 +1,4 @@
+#include <thread>
 #include "pframe.h"
 
 PFRAME::PFRAME(std::string _in, std::string _out)
@@ -16,30 +17,65 @@ void PFRAME::convert()
 	free(tmp);
 	tmp = 0;
 }
-void PFRAME::convert(IFRAME *iframe)
+typedef struct AA
+{
+	int y;
+	YUV_BUFFER *buf;
+	IFRAME *ifr;
+	unsigned char *chunky;
+	int pre;
+}AA;
+void pro(void *s);
+int PFRAME::convert(IFRAME *iframe)
 {
 	convert();
 
-	YUV_BUFFER **iBuffers = iframe->getBuffers();
-	for (int y = 0; y < Height - 4; y += 4)
+	int pre = 0;
+	std::thread aas_th[Height / BLOCK_SIZE];
+	AA aas[Height / BLOCK_SIZE];
+	for (int y = 0; y < Height / BLOCK_SIZE; y++)
 	{
-		for (int x = 0; x < Width - 4; x += 4)
+		aas[y].buf = yuv_buffer;
+		aas[y].ifr = iframe;
+		aas[y].y = y * BLOCK_SIZE;
+		aas[y].chunky = chunky;
+		aas_th[y] = std::thread(pro, &aas[y]);
+		aas_th[y].join();
+	}
+
+	for (int y = 0; y < Height / BLOCK_SIZE; y++)
+	{
+//		aas_th[y].join();
+		pre += aas[y].pre;
+	}
+	printf("pre = %i/%i\n", pre, Width / BLOCK_SIZE * Height / BLOCK_SIZE);
+	return pre;
+}
+void pro(void *s)
+{
+	AA *g = (AA*)s;
+	g->pre = 0;
+	YUV_BUFFER *iBuffer = g->ifr->getBuffers();
+	for (int x = 0; x < Width / BLOCK_SIZE; x++)
+	{
+		MOVEPRE mp = g->ifr->movepre(x * BLOCK_SIZE, g->y, g->buf);
+		if (mp.getValue() < 4)
 		{
-			MOVEPRE mp = iframe->movepre(x, y, yuv_buffer);
-			if (mp.no_err > 16 * 4)
+			for (int ys = 0; ys < BLOCK_SIZE; ys++)
 			{
-				for (int ys = 0; ys < 4; ys++)
+				for (int xs = 0; xs < BLOCK_SIZE; xs++)
 				{
-					for (int xs = 0; xs < 4; xs++)
-					{
-						YUV_BUFFER *iBuffer = iBuffers[(ys % 4) * 4 + (xs % 4)];
-						chunky[(y + ys) * Width + (x + xs)] = iBuffer->mem_y[(mp.x / 4) + (mp.x / 4) * Width];
-					}
+//					if(xs == 0 || ys == 0 || xs == 3 || ys == 3)
+//						g->chunky[(g->y + ys) * Width + (x * 4 + xs)] = 63 | 0x80;
+//					else
+						g->chunky[(g->y + ys) * Width + (x * BLOCK_SIZE + xs)] = iBuffer->mem_u[(mp.x + xs * 4) + (mp.y + ys * 4) * Width * 4] >> 2;
 				}
 			}
-			printf("err = %i, x = %i,y = %i\n",mp.no_err,mp.x,mp.y);
+			//				printf("(%i,%i) err = %f, x = %i,y = %i\n", x, y, mp.MSE, mp.x, mp.y);
+			g->pre++;
 		}
 	}
+	printf("+");
 }
 void PFRAME::process(unsigned char *mem, int w, int h)
 {
@@ -50,10 +86,10 @@ void PFRAME::process(unsigned char *mem, int w, int h)
 			int b = (int)((unsigned int)mem[x * 3 + (h - 1 - y) * 3 * w]);
 			int g = (int)((unsigned int)mem[x * 3 + (h - 1 - y) * 3 * w + 1]);
 			int r = (int)((unsigned int)mem[x * 3 + (h - 1 - y) * 3 * w + 2]);
-			yuv_buffer->mem_y[y * w + x] = (int)(yuv_matrix[0][0] * (float)r + yuv_matrix[0][1] * (float)g + yuv_matrix[0][2] * (float)b);
-			yuv_buffer->mem_u[y * w + x] = (int)(yuv_matrix[1][0] * (float)r + yuv_matrix[1][1] * (float)g + yuv_matrix[1][2] * (float)b) + 128;
-			yuv_buffer->mem_v[y * w + x] = (int)(yuv_matrix[2][0] * (float)r + yuv_matrix[2][1] * (float)g + yuv_matrix[2][2] * (float)b) + 128;
-			chunky[y * w + x] = yuv_buffer->mem_y[y * w + x] >> 2;
+			yuv_buffer->mem_y[y * w + x] = (int)((yuv_matrix[0][0] * (float)r + yuv_matrix[0][1] * (float)g + yuv_matrix[0][2] * (float)b));
+			yuv_buffer->mem_u[y * w + x] = (int)((yuv_matrix[1][0] * (float)r + yuv_matrix[1][1] * (float)g + yuv_matrix[1][2] * (float)b) + 128);
+			yuv_buffer->mem_v[y * w + x] = (int)((yuv_matrix[2][0] * (float)r + yuv_matrix[2][1] * (float)g + yuv_matrix[2][2] * (float)b) + 128);
+			chunky[y * w + x] = yuv_buffer->mem_u[y * w + x] >> 2;
 		}
 	}
 }

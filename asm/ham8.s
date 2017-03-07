@@ -2,6 +2,7 @@ ScreenWidth = 320
 ScreenHeight= 192
 Planes= 8
 Pl=0
+Frames=5
 
 	include "blitterhelper.i"
 	include "custom.i"
@@ -155,12 +156,16 @@ _Ham8_InnerLoop:
 
 ;	move.w 	#$fff,$dff180
 
-	move.l	_Frames,d0
-	move.l	d0,d1
-	sub.l 	lastframe,d1
-	cmp.l	#2,d1
+	move.l	lastframe,d0
+	and.l	#63,d0
+	bne.b	te
+	
+;	move.l	_Frames,d0
+;	move.l	d0,d1
+;	sub.l 	lastframe,d1
+;	cmp.l	#2,d1
 ;	blt.b 	.norender
-	add.l 	#2,lastframe
+;	add.l 	#2,lastframe
 
 	
 	bsr	RenderLoop
@@ -203,6 +208,7 @@ _Ham8_InnerLoop:
 	bsr.b	DrawText
 
 te:
+	add.l	#1,lastframe
 ;	move.w 	#$f00,$dff180	
 
 	move.l	Copper+8,d0
@@ -368,7 +374,7 @@ RL1:
 
 	move.l 	picindex,d0	
 	addq 	#1,d0
-	cmp.l	#100,d0
+	cmp.l	#Frames,d0
 	bne	.nn
 	move.l	#0,d0
 .nn:	move.l 	d0,picindex
@@ -404,7 +410,7 @@ LoadMyVidFile:
 	move.l	#0,d0
 	move.l 	d0,fileseek
 
-	move.l #ScreenWidth/8*ScreenHeight*8*100,d0
+	move.l #ScreenWidth/8*ScreenHeight*8*Frames,d0
 	move.l d0,filesize
 
 	move.l	#pic,d0
@@ -1079,5 +1085,5 @@ text:
 	dc.b	0
 	section	pic,BSS_F
 pic:
-	ds.b 	(ScreenWidth/8*ScreenHeight*Planes)*100
+	ds.b 	(ScreenWidth/8*ScreenHeight*Planes)*Frames
 *********************************************************************

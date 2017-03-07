@@ -11,12 +11,12 @@ public:
 	void convert();
 	MOVEPRE movepre(int x,int y,YUV_BUFFER *org);
 
-	YUV_BUFFER ** getBuffers() {	return yuv_buffer;};
+	YUV_BUFFER *getBuffers() {	return yuv_buffer;};
 private:
 	void process(unsigned  char *mem, int w, int h);
 	void createSubpixel();
 
-	YUV_BUFFER **yuv_buffer;
+	YUV_BUFFER *yuv_buffer;
 
 };
 #endif
