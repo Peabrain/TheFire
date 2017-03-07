@@ -2,7 +2,7 @@ ScreenWidth = 320
 ScreenHeight= 192
 Planes= 8
 Pl=0
-Frames=5
+Frames=20
 
 	include "blitterhelper.i"
 	include "custom.i"
@@ -157,7 +157,7 @@ _Ham8_InnerLoop:
 ;	move.w 	#$fff,$dff180
 
 	move.l	lastframe,d0
-	and.l	#63,d0
+	and.l	#127,d0
 	bne.b	te
 	
 ;	move.l	_Frames,d0

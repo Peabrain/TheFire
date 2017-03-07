@@ -40,12 +40,12 @@ int PFRAME::convert(IFRAME *iframe)
 		aas[y].y = y * BLOCK_SIZE;
 		aas[y].chunky = chunky;
 		aas_th[y] = std::thread(pro, &aas[y]);
-		aas_th[y].join();
+//		aas_th[y].join();
 	}
 
 	for (int y = 0; y < Height / BLOCK_SIZE; y++)
 	{
-//		aas_th[y].join();
+		aas_th[y].join();
 		pre += aas[y].pre;
 	}
 	printf("pre = %i/%i\n", pre, Width / BLOCK_SIZE * Height / BLOCK_SIZE);
@@ -59,16 +59,18 @@ void pro(void *s)
 	for (int x = 0; x < Width / BLOCK_SIZE; x++)
 	{
 		MOVEPRE mp = g->ifr->movepre(x * BLOCK_SIZE, g->y, g->buf);
-		if (mp.getValue() < 4)
+		if (mp.getValue() < 16.0)
 		{
 			for (int ys = 0; ys < BLOCK_SIZE; ys++)
 			{
 				for (int xs = 0; xs < BLOCK_SIZE; xs++)
 				{
-//					if(xs == 0 || ys == 0 || xs == 3 || ys == 3)
-//						g->chunky[(g->y + ys) * Width + (x * 4 + xs)] = 63 | 0x80;
-//					else
-						g->chunky[(g->y + ys) * Width + (x * BLOCK_SIZE + xs)] = iBuffer->mem_u[(mp.x + xs * 4) + (mp.y + ys * 4) * Width * 4] >> 2;
+#if defined(MYDEBUG)
+					if(xs == 0 || ys == 0 || xs == BLOCK_SIZE - 1 || ys == BLOCK_SIZE - 1)
+						g->chunky[(g->y + ys) * Width + (x * BLOCK_SIZE + xs)] = 63 | 0x80;
+					else
+#endif
+						g->chunky[(g->y + ys) * Width + (x * BLOCK_SIZE + xs)] = iBuffer->mem_y[(mp.x + xs * 4) + (mp.y + ys * 4) * Width * 4] >> 2;
 				}
 			}
 			//				printf("(%i,%i) err = %f, x = %i,y = %i\n", x, y, mp.MSE, mp.x, mp.y);
@@ -86,10 +88,10 @@ void PFRAME::process(unsigned char *mem, int w, int h)
 			int b = (int)((unsigned int)mem[x * 3 + (h - 1 - y) * 3 * w]);
 			int g = (int)((unsigned int)mem[x * 3 + (h - 1 - y) * 3 * w + 1]);
 			int r = (int)((unsigned int)mem[x * 3 + (h - 1 - y) * 3 * w + 2]);
-			yuv_buffer->mem_y[y * w + x] = (int)((yuv_matrix[0][0] * (float)r + yuv_matrix[0][1] * (float)g + yuv_matrix[0][2] * (float)b));
-			yuv_buffer->mem_u[y * w + x] = (int)((yuv_matrix[1][0] * (float)r + yuv_matrix[1][1] * (float)g + yuv_matrix[1][2] * (float)b) + 128);
-			yuv_buffer->mem_v[y * w + x] = (int)((yuv_matrix[2][0] * (float)r + yuv_matrix[2][1] * (float)g + yuv_matrix[2][2] * (float)b) + 128);
-			chunky[y * w + x] = yuv_buffer->mem_u[y * w + x] >> 2;
+			yuv_buffer->mem_y[y * w + x] = (unsigned char)((yuv_matrix[0][0] * (float)r + yuv_matrix[0][1] * (float)g + yuv_matrix[0][2] * (float)b));
+			yuv_buffer->mem_u[y * w + x] = (unsigned char)((yuv_matrix[1][0] * (float)r + yuv_matrix[1][1] * (float)g + yuv_matrix[1][2] * (float)b) + 128);
+			yuv_buffer->mem_v[y * w + x] = (unsigned char)((yuv_matrix[2][0] * (float)r + yuv_matrix[2][1] * (float)g + yuv_matrix[2][2] * (float)b) + 128);
+			chunky[y * w + x] = yuv_buffer->mem_y[y * w + x] >> 2;
 		}
 	}
 }

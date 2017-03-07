@@ -1,6 +1,7 @@
 #ifndef __YUV_BUFFER_H
 #define __YUV_BUFFER_H
 #include <iostream>
+#include <algorithm>
 #include "defines.h"
 
 class PRE_PARA
@@ -20,6 +21,8 @@ public:
 		MPC = 0;
 	}
 };
+//#define MOVEPRE_COM_UV
+#define MOVEPRE_COM_YUV
 class MOVEPRE
 {
 public:
@@ -38,8 +41,27 @@ public:
 	}
 	float getValue()
 	{
-		return (p_u.MAD + p_v.MAD) / (float)(p_u.MPC + p_v.MPC);
+//		if (p_u.MPC + p_v.MPC == 0) return 1.0;
+//		return (p_u.MAD + p_v.MAD) / (float)(p_u.MPC + p_v.MPC);
+//		return (p_u.MAD) / (float)(p_u.MPC);
+//		return (p_u.MAD + p_v.MAD + p_y.MAD) / (float)(p_u.MPC + p_v.MPC + p_y.MPC);
+#if defined(MOVEPRE_COM_UV)
+		return (p_u.MAD + p_v.MAD) / 2.0 / (float)getMPC();
+#elif defined(MOVEPRE_COM_YUV)
+		return (p_y.MSE * 0.58 + p_u.MSE * 0.3 + p_v.MSE * 0.12);
+#endif
+//		return (p_y.MAD + p_u.MAD + p_v.MAD) / 3.0;
 	};
+	int getMPC()
+	{
+#if defined(MOVEPRE_COM_UV)
+		int min = std::min(p_u.MPC, p_v.MPC);
+#elif  defined(MOVEPRE_COM_YUV)
+		int min = std::min(p_u.MPC, p_v.MPC); 
+		min = std::min(p_y.MPC, p_v.MPC);
+#endif
+		return min;
+	}
 };
 
 class YUV_BUFFER

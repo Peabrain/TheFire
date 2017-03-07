@@ -61,7 +61,7 @@ int main(int argc, const char * argv[])
 //	convertSequence("cocoon", 0,2000, 2);
 	//	convertSequence("cocoon", 6000, 3);
 	//    convertSequence("test",1,2);
-	convertSequence("sc", 7906, 5, 1);
+	convertSequence("sc", 7906, 40, 2);
 	//	convertSequence("cocoon_hd", 0, 11161, 1);
 //	convertSequence("ghost_hd", 0, 3235, 1);
 //	convertSequence("nvidia_hd", 0, 4260, 1);

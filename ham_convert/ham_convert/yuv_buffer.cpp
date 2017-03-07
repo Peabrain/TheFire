@@ -1,6 +1,6 @@
 #include "yuv_buffer.h"
 
-MOVEPRE YUV_BUFFER::movepre(int x, int y, YUV_BUFFER *org)
+MOVEPRE YUV_BUFFER::movepre(int px, int py, YUV_BUFFER *org)
 {
 
 	MOVEPRE back;
@@ -89,10 +89,26 @@ MOVEPRE YUV_BUFFER::movepre(int x, int y, YUV_BUFFER *org)
 		}
 	}
 */
-	int top = y * 4 - p;
-	int bottom = y * 4 + p + BLOCK_SIZE * 4;
-	int left = x * 4 - p;
-	int right = x * 4 + p + BLOCK_SIZE * 4;
+	int mem_y_q[4];
+	int mem_u_q[4];
+	int mem_v_q[4];
+	int blockbase = (py + BLOCK_SIZE / 2 - 1) * Width + (px + BLOCK_SIZE / 2 - 1);
+	mem_y_q[0] = org->mem_y[blockbase];
+	mem_y_q[1] = org->mem_y[blockbase + 1];
+	mem_y_q[3] = org->mem_y[blockbase + Width + 1];
+	mem_y_q[2] = org->mem_y[blockbase + Width];
+	mem_u_q[0] = org->mem_u[blockbase];
+	mem_u_q[1] = org->mem_u[blockbase + 1];
+	mem_u_q[3] = org->mem_u[blockbase + Width + 1];
+	mem_u_q[2] = org->mem_u[blockbase + Width];
+	mem_v_q[0] = org->mem_v[blockbase];
+	mem_v_q[1] = org->mem_v[blockbase + 1];
+	mem_v_q[3] = org->mem_v[blockbase + Width + 1];
+	mem_v_q[2] = org->mem_v[blockbase + Width];
+	int top = py * 4 - p;
+	int bottom = py * 4 + p + BLOCK_SIZE * 4;
+	int left = px * 4 - p;
+	int right = px * 4 + p + BLOCK_SIZE * 4;
 	if (top < 0) top = 0;
 	if (bottom > (Height - BLOCK_SIZE) * 4) bottom = (Height - BLOCK_SIZE) * 4;
 	if (left < 0) left = 0;
@@ -103,25 +119,30 @@ MOVEPRE YUV_BUFFER::movepre(int x, int y, YUV_BUFFER *org)
 		{
 			for (int xx = left; xx < right; xx++)
 			{
-				float a_y = fabs(org->mem_y[(y + BLOCK_SIZE / 2 - 1) * Width + (x + BLOCK_SIZE / 2 - 1)] - mem_y[(yy + (BLOCK_SIZE / 2 - 1) * 4) * 4 * Width + (xx + (BLOCK_SIZE / 2 - 1) * 4)]) +
-					fabs(org->mem_y[(y + BLOCK_SIZE / 2 - 1) * Width + (x + BLOCK_SIZE / 2)] - mem_y[(yy + (BLOCK_SIZE / 2 - 1) * 4) * 4 * Width + (xx + (BLOCK_SIZE / 2) * 4)]) +
-					fabs(org->mem_y[(y + BLOCK_SIZE / 2) * Width + (x + BLOCK_SIZE / 2)] - mem_y[(yy + (BLOCK_SIZE / 2) * 4) * 4 * Width + (xx + (BLOCK_SIZE / 2) * 4)]) +
-					fabs(org->mem_y[(y + BLOCK_SIZE / 2) * Width + (x + BLOCK_SIZE / 2 - 1)] - mem_y[(yy + (BLOCK_SIZE / 2) * 4) * 4 * Width + (xx + (BLOCK_SIZE / 2 - 1) * 4)]);
-				float a_u = fabs(org->mem_u[(y + BLOCK_SIZE / 2 - 1) * Width + (x + BLOCK_SIZE / 2 - 1)] - mem_u[(yy + (BLOCK_SIZE / 2 - 1) * 4) * 4 * Width + (xx + (BLOCK_SIZE / 2 - 1) * 4)]) +
-					fabs(org->mem_u[(y + BLOCK_SIZE / 2 - 1) * Width + (x + BLOCK_SIZE / 2)] - mem_u[(yy + (BLOCK_SIZE / 2 - 1) * 4) * 4 * Width + (xx + (BLOCK_SIZE / 2) * 4)]) +
-					fabs(org->mem_u[(y + BLOCK_SIZE / 2) * Width + (x + BLOCK_SIZE / 2)] - mem_u[(yy + (BLOCK_SIZE / 2) * 4) * 4 * Width + (xx + (BLOCK_SIZE / 2) * 4)]) +
-					fabs(org->mem_u[(y + BLOCK_SIZE / 2) * Width + (x + BLOCK_SIZE / 2 - 1)] - mem_u[(yy + (BLOCK_SIZE / 2) * 4) * 4 * Width + (xx + (BLOCK_SIZE / 2 - 1) * 4)]);
-				float a_v = fabs(org->mem_v[(y + BLOCK_SIZE / 2 - 1) * Width + (x + BLOCK_SIZE / 2 - 1)] - mem_v[(yy + (BLOCK_SIZE / 2 - 1) * 4) * 4 * Width + (xx + (BLOCK_SIZE / 2 - 1) * 4)]) +
-					fabs(org->mem_v[(y + BLOCK_SIZE / 2 - 1) * Width + (x + BLOCK_SIZE / 2)] - mem_v[(yy + (BLOCK_SIZE / 2 - 1) * 4) * 4 * Width + (xx + (BLOCK_SIZE / 2) * 4)]) +
-					fabs(org->mem_v[(y + BLOCK_SIZE / 2) * Width + (x + BLOCK_SIZE / 2)] - mem_v[(yy + (BLOCK_SIZE / 2) * 4) * 4 * Width + (xx + (BLOCK_SIZE / 2) * 4)]) +
-					fabs(org->mem_v[(y + BLOCK_SIZE / 2) * Width + (x + BLOCK_SIZE / 2 - 1)] - mem_v[(yy + (BLOCK_SIZE / 2) * 4) * 4 * Width + (xx + (BLOCK_SIZE / 2 - 1) * 4)]);
+				int blockbase = (yy + (BLOCK_SIZE / 2 - 1) * 4) * 4 * Width + xx + (BLOCK_SIZE / 2 - 1) * 4;
+				float a_y = fabs(mem_y_q[0] - (int)mem_y[blockbase]) +
+					fabs(mem_y_q[1] - (int)mem_y[blockbase + 4]) +
+					fabs(mem_y_q[3] - (int)mem_y[blockbase + 4 * 4 * Width + 4]) +
+					fabs(mem_y_q[2] - (int)mem_y[blockbase + 4 * 4 * Width]);
+				float a_u = fabs(mem_u_q[0] - (int)mem_u[blockbase]) +
+					fabs(mem_u_q[1] - (int)mem_u[blockbase + 4]) +
+					fabs(mem_u_q[3] - (int)mem_u[blockbase + 4 * 4 * Width + 4]) +
+					fabs(mem_u_q[2] - (int)mem_u[blockbase + 4 * 4 * Width]);
+				float a_v = fabs(mem_v_q[0] - (int)mem_v[blockbase]) +
+					fabs(mem_v_q[1] - (int)mem_v[blockbase + 4]) +
+					fabs(mem_v_q[3] - (int)mem_v[blockbase + 4 * 4 * Width + 4]) +
+					fabs(mem_v_q[2] - (int)mem_v[blockbase + 4 * 4 * Width]);
 				a_y /= 4;
 				a_u /= 4;
 				a_v /= 4;
-				if (a_u + a_v < 2)
+#if defined(MOVEPRE_COM_UV)
+				if ((a_u + a_v) / 2 < 3)
+#elif defined(MOVEPRE_COM_YUV)
+				if ((a_y + a_u + a_v) / 3 < 6)
+#endif
 				{
-					MOVEPRE back_new = checkpos(x, y, xx, yy, org);
-					if (back_new.getValue() < back.getValue())
+					MOVEPRE back_new = checkpos(px, py, xx, yy, org);
+					if (back_new.getValue() < back.getValue() && back_new.getMPC() > BLOCK_SIZE * BLOCK_SIZE / 2)
 					{
 						back = back_new;
 //						back.x = xx;
@@ -188,7 +209,7 @@ MOVEPRE YUV_BUFFER::movepre(int x, int y, YUV_BUFFER *org)
 */
 	return back;
 }
-MOVEPRE YUV_BUFFER::checkpos(int x, int y, int x_s, int y_s, YUV_BUFFER *org)
+MOVEPRE YUV_BUFFER::checkpos(int px, int py, int x_s, int y_s, YUV_BUFFER *org)
 {
 	MOVEPRE back;
 	back.p_y.MSE = 0.0;
@@ -200,24 +221,25 @@ MOVEPRE YUV_BUFFER::checkpos(int x, int y, int x_s, int y_s, YUV_BUFFER *org)
 	back.p_y.MPC = 0;
 	back.p_u.MPC = 0;
 	back.p_v.MPC = 0;
-	back.x = 0;
-	back.y = 0;
 	for (int yy = 0; yy < BLOCK_SIZE; yy++)
 	{
 		for (int xx = 0; xx < BLOCK_SIZE; xx++)
 		{
-			float mad_y = fabs(org->mem_y[(yy + y) * Width + (xx + x)] - mem_y[(yy * 4 + y_s) * 4 * Width + xx * 4 + x_s]);
-			float mad_u = fabs(org->mem_u[(yy + y) * Width + (xx + x)] - mem_u[(yy * 4 + y_s) * 4 * Width + xx * 4 + x_s]);
-			float mad_v = fabs(org->mem_v[(yy + y) * Width + (xx + x)] - mem_v[(yy * 4 + y_s) * 4 * Width + xx * 4 + x_s]);
+			float mad_y = fabs((int)org->mem_y[(yy + py) * Width + (xx + px)] - (int)mem_y[(yy * 4 + y_s) * 4 * Width + xx * 4 + x_s]);
+			float mad_u = fabs((int)org->mem_u[(yy + py) * Width + (xx + px)] - (int)mem_u[(yy * 4 + y_s) * 4 * Width + xx * 4 + x_s]);
+			float mad_v = fabs((int)org->mem_v[(yy + py) * Width + (xx + px)] - (int)mem_v[(yy * 4 + y_s) * 4 * Width + xx * 4 + x_s]);
 			if (mad_y < 8) back.p_y.MPC++;
 			if (mad_u < 8) back.p_u.MPC++;
 			if (mad_v < 8) back.p_v.MPC++;
 			back.p_y.MAD += mad_y;
 			back.p_u.MAD += mad_u;
 			back.p_v.MAD += mad_v;
-			back.p_y.MSE += (org->mem_y[(yy + y) * Width + (xx + x)] - mem_y[(yy * 4 + y_s) * 4 * Width + xx * 4 + x_s]) * (org->mem_y[(yy + y) * Width + (xx + x)] - mem_y[(yy * 4 + y_s) * 4 * Width + xx * 4 + x_s]);
-			back.p_u.MSE += (org->mem_u[(yy + y) * Width + (xx + x)] - mem_u[(yy * 4 + y_s) * 4 * Width + xx * 4 + x_s]) * (org->mem_u[(yy + y) * Width + (xx + x)] - mem_u[(yy * 4 + y_s) * 4 * Width + xx * 4 + x_s]);
-			back.p_v.MSE += (org->mem_v[(yy + y) * Width + (xx + x)] - mem_v[(yy * 4 + y_s) * 4 * Width + xx * 4 + x_s]) * (org->mem_v[(yy + y) * Width + (xx + x)] - mem_v[(yy * 4 + y_s) * 4 * Width + xx * 4 + x_s]);
+			int mse_y = (int)org->mem_y[(yy + py) * Width + (xx + px)] - (int)mem_y[(yy * 4 + y_s) * 4 * Width + xx * 4 + x_s];
+			int mse_u = (int)org->mem_u[(yy + py) * Width + (xx + px)] - (int)mem_u[(yy * 4 + y_s) * 4 * Width + xx * 4 + x_s];
+			int mse_v = (int)org->mem_v[(yy + py) * Width + (xx + px)] - (int)mem_v[(yy * 4 + y_s) * 4 * Width + xx * 4 + x_s];
+			back.p_y.MSE += mse_y * mse_y;
+			back.p_u.MSE += mse_u * mse_u;
+			back.p_v.MSE += mse_v * mse_v;
 		}
 	}
 	back.p_y.MSE /= BLOCK_SIZE_SQ;

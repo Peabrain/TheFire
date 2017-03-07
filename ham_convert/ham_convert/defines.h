@@ -4,9 +4,10 @@
 #include <string.h>
 #include "yuv_buffer.h"
 
-#define BLOCK_SIZE 16
+#define BLOCK_SIZE 8
 #define BLOCK_SIZE_SQ (BLOCK_SIZE * BLOCK_SIZE)
 
+//#define MYDEBUG
 #define PLANES 8
 #define Width  320
 #define Height  192
