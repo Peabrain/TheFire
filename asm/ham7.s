@@ -218,7 +218,7 @@ _Ham7_Deinit:
 ;---------------------------------
 _Ham7_InnerLoop:
 
-;	move.w 	#$fff,$dff180
+	move.w 	#$fff,$dff180
 
 ;	move.l	Screens,a0
 ;	move.w	#ScreenWidth/32-1,d7
