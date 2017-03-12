@@ -288,3 +288,141 @@ void	testCommandLine(__reg("d0") _d0,__reg("d0") _d1,__reg("d0") _d2,__reg("d0")
 {
 	
 }
+#define SCALE_SHIFT 17 
+int yuv_imatrix[3][3] = {
+	{ 1 * (1 << SCALE_SHIFT)	,0		,1.13983 * (1 << SCALE_SHIFT) },
+	{ 1 * (1 << SCALE_SHIFT)	,-0.39465 * (1 << SCALE_SHIFT)	,-0.58060 * (1 << SCALE_SHIFT) },
+	{ 1 * (1 << SCALE_SHIFT)	,2.03211 * (1 << SCALE_SHIFT)	,0 }
+};
+short colorR[32] =
+{
+	0x0000,
+	0x0800,
+	0x0008,
+	0x0808,
+	0x0080,
+	0x0880,
+	0x0088,
+	0x0888,
+	0x8000,
+	0x8800,
+	0x8008,
+	0x8808,
+	0x8080,
+	0x8880,
+	0x8088,
+	0x8888,
+	0x1000,
+	0x1800,
+	0x1008,
+	0x1808,
+	0x1080,
+	0x1880,
+	0x1088,
+	0x1888,
+	0x9000,
+	0x9800,
+	0x9008,
+	0x9808,
+	0x9080,
+	0x9880,
+	0x9088,
+	0x9888,
+};
+short colorG[32] = 
+{
+	0x0000,
+	0x0400,
+	0x0004,
+	0x0404,
+	0x0040,
+	0x0440,
+	0x0044,
+	0x0444,
+	0x4000,
+	0x4400,
+	0x4004,
+	0x4404,
+	0x4040,
+	0x4440,
+	0x4044,
+	0x4444,
+	0x0100,
+	0x0500,
+	0x0104,
+	0x0504,
+	0x0140,
+	0x0540,
+	0x0144,
+	0x0544,
+	0x4100,
+	0x4500,
+	0x4104,
+	0x4504,
+	0x4140,
+	0x4540,
+	0x4144,
+	0x4544,
+};
+short colorB[32] = 
+{
+	0x0000,
+	0x0200,
+	0x0002,
+	0x0202,
+	0x0020,
+	0x0220,
+	0x0022,
+	0x0222,
+	0x2000,
+	0x2200,
+	0x2002,
+	0x2202,
+	0x2020,
+	0x2220,
+	0x2022,
+	0x2222,
+	0x0001,
+	0x0201,
+	0x0003,
+	0x0203,
+	0x0021,
+	0x0221,
+	0x0023,
+	0x0223,
+	0x2001,
+	0x2201,
+	0x2003,
+	0x2203,
+	0x2021,
+	0x2221,
+	0x2023,
+	0x2223,
+};
+
+void	PreHam7(__reg("a0") short *Memory)
+{
+	int	y,u,v;
+	int	r,g,b;
+	short m;
+	for(y = 0;y < 32;y++)
+	{
+		for(u = 0;u < 32;u++)
+		{
+			for(v = 0;v < 32;v++)
+			{
+				r = (yuv_imatrix[0][0] * y + yuv_imatrix[0][1] * (u - 16) + yuv_imatrix[0][2] * (v - 16)) >> SCALE_SHIFT;
+				g = (yuv_imatrix[1][0] * y + yuv_imatrix[1][1] * (u - 16) + yuv_imatrix[1][2] * (v - 16)) >> SCALE_SHIFT;
+				b = (yuv_imatrix[2][0] * y + yuv_imatrix[2][1] * (u - 16) + yuv_imatrix[2][2] * (v - 16)) >> SCALE_SHIFT;
+				if(r < 0) r = 0;
+				if(g < 0) g = 0;
+				if(b < 0) b = 0;
+				if(r >= 32) r = 31;
+				if(g >= 32) g = 31;
+				if(b >= 32) b = 31;
+				m = colorR[r] | colorG[g] | colorB[b];
+				Memory[v | (u << 5) | (y << 10)] = m;
+			}
+		}
+	}
+}

@@ -86,6 +86,9 @@ mainloop:
 .wframe2:
 	cmp.b	#$5,$dff006
 	bne.b	.wframe2
+;.wframe3:
+;	cmp.b	#$f1,$dff006
+;	bne.b	.wframe3
 
 	btst	#6,$bfe001
 	beq.w	exit

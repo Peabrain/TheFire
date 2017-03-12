@@ -13,8 +13,11 @@ Frames=10
 	xref	_Frames
 	xref	_DeinitSub
 	xref	SP_HAM7SCR
+	xref	_PreHam7
 	xref	AEnd
 	xref	pDOSBase	
+
+	xdef	YUV_RGB
 
 	section	ham7,CODE_F
 
@@ -182,34 +185,9 @@ _Ham7_Init:
 
 	; r3g3b3r4 r0g0b0g4 r2g2b2XX r1g1b1b4
 
-	lea		colorR,a1
-	lea		colorG,a2
-	lea		colorB,a3
-	lea		pic,a0
-	move.w	#%1001100010001000,d0
-	move.w	#%0100010101000100,d0
-	move.w	#%0010001000110011,d0
-;	move.w	#%0000000000000001,d0
-	move.w	#0,d2
-	move.w	#32-1,d7
-.mb1:
-	swap	d7
-	move.w	#0,d0
-	move.w	#32-1,d7
-.mb:
-	move.w	d0,d3
-	add.w	d2,d3
-	asr.w	#1,d3
-	move.w	(a1,d0*2),d1
-	or.w	(a2,d2*2),d1
-	or.w	(a3,d3*2),d1
-	move.w	d1,(a0)+
-	add.w	#1,d0
-	dbf		d7,.mb
-	add.l	#(ScreenWidth/4-32)*2,a0
-	add.w	#1,d2
-	swap	d7
-	dbf		d7,.mb1
+	lea		YUV_RGB,a0
+	jsr		_PreHam7
+			
 	rts
 ;---------------------------------
 _Ham7_Deinit:
@@ -231,10 +209,59 @@ _Ham7_InnerLoop:
 ;	addq	#4,a0
 ;	dbf		d7,.fd
 
-	lea	pic,a0 ;pointer to 15bit scrambled word chunkybuffer
-	move.l	Screens,a1	;pointer to interleaved 8bpl ham8 screen
+;	lea		YUV_RGB,a1
+;	lea		picorg,a0
+;	move.l	lastframe,d0
+;	mulu.l	#320*192*2,d0
+;	add.l	d0,a0
+;	lea		pic,a2
+;	move.w	#320*192/2,d0
+;.cx:
+;	move.l	(a0)+,d1
+;	move.w	(a1,d1.w*2),d1
+;	swap	d1
+;	move.w	(a1,d1.w*2),d1
+;	swap	d1
+;	move.l	d1,(a2)+
+;	dbf		d0,.cx
+
+
+	lea	picorg,a0 ;pointer to 15bit scrambled word chunkybuffer
+	move.l	lastframe,d0
+	mulu.l	#320*192*2,d0
+	add.l	d0,a0
+	move.l	Screens+8,a1	;pointer to interleaved 8bpl ham8 screen
 	jsr	SP_HAM7SCR
 
+;	lea		YUV_RGB,a1
+;	lea		pic,a4
+;	move.l	lastframe,d2
+;	and.l	#31,d2
+;	lsl.w	#8,d2
+;	lsl.w	#2,d2
+;	move.w	#16*32*32,d2
+;	move.w	#10-1,d6
+;.mb2:
+;	move.l	a4,a0
+;	move.w	d2,d0
+;	move.w	#32-1,d7
+;.mb1:
+;	swap	d7
+;	move.w	#32-1,d7
+;.mb:
+;	move.w	(a1,d0*2),d1
+;	move.w	d1,(a0)+
+;	add.w	#1,d0
+;	dbf		d7,.mb
+;	add.l	#(ScreenWidth/4-32)*2,a0
+;	swap	d7
+;	dbf		d7,.mb1
+;	add.w	#32*32,d2
+;	and.w	#$7c00,d2
+;	add.l	#32*2,a4
+;	dbf		d6,.mb2
+	
+	
 ;	move.l	lastframe,d0
 ;	and.l	#127,d0
 ;	bne.b	te
@@ -288,6 +315,10 @@ _Ham7_InnerLoop:
 
 te:
 	add.l	#1,lastframe
+	cmp.l	#100,lastframe
+	bne.b	.sf
+	move.l	#0,lastframe
+.sf:	
 ;	move.w 	#$f00,$dff180	
 
 	move.l	Copper,d0
@@ -593,8 +624,8 @@ down_pic:
 ; display dimensions
 DISPW           equ     ScreenWidth/4
 DISPH           equ     ScreenHeight
-HSTART          equ     129+(256-DISPW)/4-64
-HEND 	        equ     HSTART+DISPW-$100+16
+HSTART          equ     129+(256-DISPW)/4-32
+HEND 	        equ     HSTART+DISPW-$100+64
 VSTART          equ     36; +(256-ScreenHeight)/2-10
 VEND            equ     VSTART+DISPH
 DFETCHSTART     equ     HSTART/2
@@ -835,8 +866,10 @@ Bitplane1:
 
 	dc.w	$0106,$00c0
 	dc.w	$0007+(VSTART<<8),$fffe
+	dc.w	$0096,$87d0
 	dc.w	$0100,(Pl<<12)+MODE
 	dc.w	$0007+((VEND&$ff)<<8),$fffe
+	dc.w	$0096,$84d0
 	dc.w	$0180,$0000
 	dc.w	$0100,$0000
 
@@ -875,8 +908,10 @@ Bitplane2:
 
 	dc.w	$0106,$0020
 	dc.w	$0007+(VSTART<<8),$fffe
+	dc.w	$0096,$87d0
 	dc.w	$0100,(Pl<<12)+MODE
 	dc.w	$0007+((VEND&$ff)<<8),$fffe
+	dc.w	$0096,$84d0
 	dc.w	$0180,$0000
 	dc.w	$0100,$0000
 
@@ -915,8 +950,10 @@ Bitplane3:
 
 	dc.w	$0106,$0020
 	dc.w	$0007+(VSTART<<8),$fffe
+	dc.w	$0096,$87d0
 	dc.w	$0100,(Pl<<12)+MODE
 	dc.w	$0007+((VEND&$ff)<<8),$fffe
+	dc.w	$0096,$84d0
 	dc.w	$0180,$0000
 	dc.w	$0100,$0000
 CopperAdr3:
@@ -1168,113 +1205,113 @@ filenameSnd:
 font8x8_basic:
 	incbin	font.bmp
 	even
-	; r3g3b3r4 r0g0b0g4 r2g2b2XX r1g1b1b4
-
-colorR:
-	dc.w	%0000000000000000
-	dc.w	%0000100000000000
-	dc.w	%0000000000001000
-	dc.w	%0000100000001000
-	dc.w	%0000000010000000
-	dc.w	%0000100010000000
-	dc.w	%0000000010001000
-	dc.w	%0000100010001000
-	dc.w	%1000000000000000
-	dc.w	%1000100000000000
-	dc.w	%1000000000001000
-	dc.w	%1000100000001000
-	dc.w	%1000000010000000
-	dc.w	%1000100010000000
-	dc.w	%1000000010001000
-	dc.w	%1000100010001000
-	dc.w	%0001000000000000
-	dc.w	%0001100000000000
-	dc.w	%0001000000001000
-	dc.w	%0001100000001000
-	dc.w	%0001000010000000
-	dc.w	%0001100010000000
-	dc.w	%0001000010001000
-	dc.w	%0001100010001000
-	dc.w	%1001000000000000
-	dc.w	%1001100000000000
-	dc.w	%1001000000001000
-	dc.w	%1001100000001000
-	dc.w	%1001000010000000
-	dc.w	%1001100010000000
-	dc.w	%1001000010001000
-	dc.w	%1001100010001000
-
-colorG:
-	dc.w	%0000000000000000
-	dc.w	%0000010000000000
-	dc.w	%0000000000000100
-	dc.w	%0000010000000100
-	dc.w	%0000000001000000
-	dc.w	%0000010001000000
-	dc.w	%0000000001000100
-	dc.w	%0000010001000100
-	dc.w	%0100000000000000
-	dc.w	%0100010000000000
-	dc.w	%0100000000000100
-	dc.w	%0100010000000100
-	dc.w	%0100000001000000
-	dc.w	%0100010001000000
-	dc.w	%0100000001000100
-	dc.w	%0100010001000100
-	dc.w	%0000000100000000
-	dc.w	%0000010100000000
-	dc.w	%0000000100000100
-	dc.w	%0000010100000100
-	dc.w	%0000000101000000
-	dc.w	%0000010101000000
-	dc.w	%0000000101000100
-	dc.w	%0000010101000100
-	dc.w	%0100000100000000
-	dc.w	%0100010100000000
-	dc.w	%0100000100000100
-	dc.w	%0100010100000100
-	dc.w	%0100000101000000
-	dc.w	%0100010101000000
-	dc.w	%0100000101000100
-	dc.w	%0100010101000100
-
-colorB:
-	dc.w	%0000000000000000
-	dc.w	%0000001000000000
-	dc.w	%0000000000000010
-	dc.w	%0000001000000010
-	dc.w	%0000000000100000
-	dc.w	%0000001000100000
-	dc.w	%0000000000100010
-	dc.w	%0000001000100010
-	dc.w	%0010000000000000
-	dc.w	%0010001000000000
-	dc.w	%0010000000000010
-	dc.w	%0010001000000010
-	dc.w	%0010000000100000
-	dc.w	%0010001000100000
-	dc.w	%0010000000100010
-	dc.w	%0010001000100010
-	dc.w	%0000000000000001	
-	dc.w	%0000001000000001	
-	dc.w	%0000000000000011
-	dc.w	%0000001000000011
-	dc.w	%0000000000100001
-	dc.w	%0000001000100001
-	dc.w	%0000000000100011
-	dc.w	%0000001000100011
-	dc.w	%0010000000000001
-	dc.w	%0010001000000001
-	dc.w	%0010000000000011
-	dc.w	%0010001000000011
-	dc.w	%0010000000100001
-	dc.w	%0010001000100001
-	dc.w	%0010000000100011
-	dc.w	%0010001000100011
+picorg:
+	incbin	tmp000.ppm
+	incbin	tmp001.ppm
+	incbin	tmp002.ppm
+	incbin	tmp003.ppm
+	incbin	tmp004.ppm
+	incbin	tmp005.ppm
+	incbin	tmp006.ppm
+	incbin	tmp007.ppm
+	incbin	tmp008.ppm
+	incbin	tmp009.ppm
+	incbin	tmp010.ppm
+	incbin	tmp011.ppm
+	incbin	tmp012.ppm
+	incbin	tmp013.ppm
+	incbin	tmp014.ppm
+	incbin	tmp015.ppm
+	incbin	tmp016.ppm
+	incbin	tmp017.ppm
+	incbin	tmp018.ppm
+	incbin	tmp019.ppm
+	incbin	tmp020.ppm
+	incbin	tmp021.ppm
+	incbin	tmp022.ppm
+	incbin	tmp023.ppm
+	incbin	tmp024.ppm
+	incbin	tmp025.ppm
+	incbin	tmp026.ppm
+	incbin	tmp027.ppm
+	incbin	tmp028.ppm
+	incbin	tmp029.ppm
+	incbin	tmp030.ppm
+	incbin	tmp031.ppm
+	incbin	tmp032.ppm
+	incbin	tmp033.ppm
+	incbin	tmp034.ppm
+	incbin	tmp035.ppm
+	incbin	tmp036.ppm
+	incbin	tmp037.ppm
+	incbin	tmp038.ppm
+	incbin	tmp039.ppm
+	incbin	tmp040.ppm
+	incbin	tmp041.ppm
+	incbin	tmp042.ppm
+	incbin	tmp043.ppm
+	incbin	tmp044.ppm
+	incbin	tmp045.ppm
+	incbin	tmp046.ppm
+	incbin	tmp047.ppm
+	incbin	tmp048.ppm
+	incbin	tmp049.ppm
+	incbin	tmp050.ppm
+	incbin	tmp051.ppm
+	incbin	tmp052.ppm
+	incbin	tmp053.ppm
+	incbin	tmp054.ppm
+	incbin	tmp055.ppm
+	incbin	tmp056.ppm
+	incbin	tmp057.ppm
+	incbin	tmp058.ppm
+	incbin	tmp059.ppm
+	incbin	tmp060.ppm
+	incbin	tmp061.ppm
+	incbin	tmp062.ppm
+	incbin	tmp063.ppm
+	incbin	tmp064.ppm
+	incbin	tmp065.ppm
+	incbin	tmp066.ppm
+	incbin	tmp067.ppm
+	incbin	tmp068.ppm
+	incbin	tmp069.ppm
+	incbin	tmp070.ppm
+	incbin	tmp071.ppm
+	incbin	tmp072.ppm
+	incbin	tmp073.ppm
+	incbin	tmp074.ppm
+	incbin	tmp075.ppm
+	incbin	tmp076.ppm
+	incbin	tmp077.ppm
+	incbin	tmp078.ppm
+	incbin	tmp079.ppm
+	incbin	tmp080.ppm
+	incbin	tmp081.ppm
+	incbin	tmp082.ppm
+	incbin	tmp083.ppm
+	incbin	tmp084.ppm
+	incbin	tmp085.ppm
+	incbin	tmp086.ppm
+	incbin	tmp087.ppm
+	incbin	tmp088.ppm
+	incbin	tmp089.ppm
+	incbin	tmp090.ppm
+	incbin	tmp091.ppm
+	incbin	tmp092.ppm
+	incbin	tmp093.ppm
+	incbin	tmp094.ppm
+	incbin	tmp095.ppm
+	incbin	tmp096.ppm
+	incbin	tmp097.ppm
+	incbin	tmp098.ppm
+	incbin	tmp099.ppm
 text:
 	incbin	text.txt
 	dc.b	0
 	section	pic,BSS_F
+YUV_RGB:
+	ds.w	32*32*32
 pic:
 	ds.b 	(ScreenWidth/8*ScreenHeight*Planes)*Frames
 *********************************************************************

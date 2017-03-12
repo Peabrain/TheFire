@@ -152,10 +152,12 @@ SP_HAM6SCR:
 ; on 030 50. I use a interleaved 8bpl ham8 bitmap.
 ; Scrx=1280 for 320*xxx truecolour display.
 
+	xref	YUV_RGB
 SP_HAM7SCR:
 	move.l	#%00001111000011110000111100001111,d6
 	move.l	#%00000000111111110000000011111111,d7
 	move.l	#%00010001000100010001000100010001,a5
+	lea		YUV_RGB,a4
 ;	lea	chunkybuffer,a0 ;pointer to 15bit scrambled word chunkybuffer
 ;	move.l	logscreen,a1	;pointer to interleaved 8bpl ham8 screen
 	add.l	#(Scrx*4)/8,a1	;skip the maskbitplanes
@@ -167,9 +169,25 @@ SP_HAM7SCR:
 *****************************************************
 
 	move.l	(a0)+,d0
+	move.w	(a4,d0.w*2),d0
+	swap	d0
+	move.w	(a4,d0.w*2),d0
+	swap	d0
 	move.l	(a0)+,d1
+	move.w	(a4,d1.w*2),d1
+	swap	d1
+	move.w	(a4,d1.w*2),d1
+	swap	d1
 	move.l	(a0)+,d2
+	move.w	(a4,d2.w*2),d2
+	swap	d2
+	move.w	(a4,d2.w*2),d2
+	swap	d2
 	move.l	(a0)+,d3
+	move.w	(a4,d3.w*2),d3
+	swap	d3
+	move.w	(a4,d3.w*2),d3
+	swap	d3
 	
 	move.l	d2,d4		;swap 16 (1X3)
 	move.w	d0,d4
@@ -241,9 +259,25 @@ SP_HAM7SCR:
 
 	move.l	d0,d4
 	move.l	(a0)+,d0
+	move.w	(a4,d0.w*2),d0
+	swap	d0
+	move.w	(a4,d0.w*2),d0
+	swap	d0
 	move.l	(a0)+,d1
+	move.w	(a4,d1.w*2),d1
+	swap	d1
+	move.w	(a4,d1.w*2),d1
+	swap	d1
 	move.l	(a0)+,d2
+	move.w	(a4,d2.w*2),d2
+	swap	d2
+	move.w	(a4,d2.w*2),d2
+	swap	d2
 	move.l	(a0)+,d3
+	move.w	(a4,d3.w*2),d3
+	swap	d3
+	move.w	(a4,d3.w*2),d3
+	swap	d3
 	
 	move.l	d4,3*(Scrx/8)(a1)
 
