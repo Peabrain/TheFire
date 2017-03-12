@@ -55,12 +55,13 @@ void pro(void *s)
 {
 	AA *g = (AA*)s;
 	g->pre = 0;
-	YUV_BUFFER *iBuffer = g->ifr->getBuffers();
+	YUV_BUFFER **iBuffers = g->ifr->getBuffers();
 	for (int x = 0; x < Width / BLOCK_SIZE; x++)
 	{
 		MOVEPRE mp = g->ifr->movepre(x * BLOCK_SIZE, g->y, g->buf);
-		if (mp.getValue() < 16.0)
+		if (mp.getValue() < 32)
 		{
+			YUV_BUFFER *iBuffer = iBuffers[(mp.y % 4) * 4 + (mp.x % 4)];
 			for (int ys = 0; ys < BLOCK_SIZE; ys++)
 			{
 				for (int xs = 0; xs < BLOCK_SIZE; xs++)
@@ -70,7 +71,7 @@ void pro(void *s)
 						g->chunky[(g->y + ys) * Width + (x * BLOCK_SIZE + xs)] = 63 | 0x80;
 					else
 #endif
-						g->chunky[(g->y + ys) * Width + (x * BLOCK_SIZE + xs)] = iBuffer->mem_y[(mp.x + xs * 4) + (mp.y + ys * 4) * Width * 4] >> 2;
+						g->chunky[(g->y + ys) * Width + (x * BLOCK_SIZE + xs)] = iBuffer->mem_y[(mp.x >> 2) + xs + (ys + (mp.y >> 2)) * Width] >> 2;
 				}
 			}
 			//				printf("(%i,%i) err = %f, x = %i,y = %i\n", x, y, mp.MSE, mp.x, mp.y);
@@ -94,4 +95,7 @@ void PFRAME::process(unsigned char *mem, int w, int h)
 			chunky[y * w + x] = yuv_buffer->mem_y[y * w + x] >> 2;
 		}
 	}
+	extern void doDCT(unsigned char *mem, int w, int h);
+	doDCT(yuv_buffer->mem_y, w, h);
+	//	yuv_buffer->createEmboss();
 }

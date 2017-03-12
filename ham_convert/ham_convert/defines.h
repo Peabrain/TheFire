@@ -4,7 +4,7 @@
 #include <string.h>
 #include "yuv_buffer.h"
 
-#define BLOCK_SIZE 8
+#define BLOCK_SIZE 16
 #define BLOCK_SIZE_SQ (BLOCK_SIZE * BLOCK_SIZE)
 
 //#define MYDEBUG
@@ -14,7 +14,7 @@
 //#define FFT_CALC
 //#define DCT_CALC
 #define THREADS 8
-#define CT_DIM_BIT 3
+#define CT_DIM_BIT 5
 #define CT_DIM (1 << CT_DIM_BIT)
 
 typedef struct RGB

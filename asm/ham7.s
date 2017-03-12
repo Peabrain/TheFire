@@ -1,4 +1,4 @@
-ScreenWidth = 320
+ScreenWidth = 1280
 ScreenHeight= 192
 Planes= 8
 Pl=0
@@ -7,19 +7,19 @@ Frames=10
 	include "blitterhelper.i"
 	include "custom.i"
 
-	xdef	_Ham8_Init
+	xdef	_Ham7_Init
 	xref	_InterruptSub
 	xref	_loadNext	
 	xref	_Frames
 	xref	_DeinitSub
-	xref	_BEST_c2p
+	xref	SP_HAM7SCR
 	xref	AEnd
 	xref	pDOSBase	
 
-	section	ham8,CODE_F
+	section	ham7,CODE_F
 
 ;---------Bitplane init ----------
-_Ham8_Init:
+_Ham7_Init:
 	lea	Bitplane1,a0
 	move.l	#ChipMemory,d0
 	move.l 	d0,Screens
@@ -29,9 +29,10 @@ _Ham8_Init:
 	swap	d0
 	move.w	d0,2(a0)
 	swap	d0
-	add.l	#ScreenWidth/8*ScreenHeight,d0
+	add.l	#ScreenWidth/8,d0
 	add.l	#8,a0
 	dbf	d1,.l1
+	add.l	#ScreenWidth/8*Planes*(ScreenHeight-1),d0
 
 	lea	Bitplane2,a0
 	move.l 	d0,Screens+4
@@ -41,9 +42,10 @@ _Ham8_Init:
 	swap	d0
 	move.w	d0,2(a0)
 	swap	d0
-	add.l	#ScreenWidth/8*ScreenHeight,d0
+	add.l	#ScreenWidth/8,d0
 	add.l	#8,a0
 	dbf	d1,.l2
+	add.l	#ScreenWidth/8*Planes*(ScreenHeight-1),d0
 
 	lea	Bitplane3,a0
 	move.l 	d0,Screens+8
@@ -53,54 +55,55 @@ _Ham8_Init:
 	swap	d0
 	move.w	d0,2(a0)
 	swap	d0
-	add.l	#ScreenWidth/8*ScreenHeight,d0
+	add.l	#ScreenWidth/8,d0
 	add.l	#8,a0
 	dbf	d1,.l3
+	add.l	#ScreenWidth/8*Planes*(ScreenHeight-1),d0
 
-	lea	BitplaneSecond,a0
-	lea SecondCopperList,a4
-	move.w	#(SecondCopperListEnd-SecondCopperList)/4-1,d0
-.l9:
-	move.l	(a4)+,d7
-	move.l	d7,(a0)+
-	dbf		d0,.l9
+;	lea	BitplaneSecond,a0
+;	lea SecondCopperList,a4
+;	move.w	#(SecondCopperListEnd-SecondCopperList)/4-1,d0
+;.l9:
+;	move.l	(a4)+,d7
+;	move.l	d7,(a0)+
+;	dbf		d0,.l9
 	
 	
-	move.l	#down_pic+62,a0
-	move.l	#ScreenWidth/8*24/4-1,d1
-.l5:
-	eor.l	#$ffffffff,(a0)+
-	dbf	d1,.l5
+;	move.l	#down_pic+62,a0
+;	move.l	#ScreenWidth/8*24/4-1,d1
+;.l5:
+;	eor.l	#$ffffffff,(a0)+
+;	dbf	d1,.l5
 
-	lea	BitplaneSecond,a0
-	move.l	#down_pic+62,d0
-	move.l	#8-1,d1
-.l4:
-	move.w	d0,6(a0)
-	swap	d0
-	move.w	d0,2(a0)
-	swap	d0
-	add.l	#ScreenWidth/8*24,d0
-	add.l	#8,a0
-	dbf	d1,.l4
+;	lea	BitplaneSecond,a0
+;	move.l	#down_pic+62,d0
+;	move.l	#8-1,d1
+;.l4:
+;	move.w	d0,6(a0)
+;	swap	d0
+;	move.w	d0,2(a0)
+;	swap	d0
+;	add.l	#ScreenWidth/8*24,d0
+;	add.l	#8,a0
+;	dbf	d1,.l4
 	
-	lea	Bitplane1_top,a0
-	move.l	#pic_top,d0
-	move.l	#8-1,d1
-.l6:
-	move.w	d0,6(a0)
-	swap	d0
-	move.w	d0,2(a0)
-	swap	d0
-	add.l	#ScreenWidth*2/8*9,d0
-	add.l	#8,a0
-	dbf	d1,.l6
+;	lea	Bitplane1_top,a0
+;	move.l	#pic_top,d0
+;	move.l	#8-1,d1
+;.l6:
+;	move.w	d0,6(a0)
+;	swap	d0
+;	move.w	d0,2(a0)
+;	swap	d0
+;	add.l	#ScreenWidth*2/8*9,d0
+;	add.l	#8,a0
+;	dbf	d1,.l6
 
-	lea		font8x8_basic+62,a1
-	move.w	#16*16*8/4-1,d0
-.l7:
-	eor.l	#$ffffffff,(a1)+
-	dbf		d0,.l7
+;	lea		font8x8_basic+62,a1
+;	move.w	#16*16*8/4-1,d0
+;.l7:
+;	eor.l	#$ffffffff,(a1)+
+;	dbf		d0,.l7
 
 	move.l	#CopperBase,d0
 	move.w	d0,CopperAdrEnd+6
@@ -134,31 +137,107 @@ _Ham8_Init:
 	swap	d7
 	dbf	d7,.clo1
 
-	move.l 	#_Ham8_InnerLoop,a0
+	move.l 	#_Ham7_InnerLoop,a0
 	move.l 	a0,_InterruptSub
 
 	move.l	_Frames,d0
 	move.l 	d0,lastframe
 	
-	move.l 	#_Ham8_Deinit,a0
+	move.l 	#_Ham7_Deinit,a0
 	move.l	a0,_DeinitSub
 	
 ;	bsr 	PlaySample
 
-	bsr 	LoadMyVidFile
+;	bsr 	LoadMyVidFile
+
+;	lea		pic,a0
+;	move.w	#$001f,d0
+;	move.w	#320-1,d7
+;.fl:
+;	move.w	d0,(a0)+
+;	dbf		d7,.fl
+
+	move.l	#%01100110011001100110011001100110,d0
+	move.l	#%11011101110111011101110111011101,d1
+	move.l	Screens,a0
+	move.l	Screens+4,a1
+	move.l	Screens+8,a2
+	move.w	#ScreenHeight-1,d7
+.lp1:
+	swap	d7
+	move.w	#ScreenWidth/32-1,d7
+.lp:
+	move.l	d1,ScreenWidth/8(a0)
+	move.l	d0,(a0)+
+	move.l	d1,ScreenWidth/8(a1)
+	move.l	d0,(a1)+
+	move.l	d1,ScreenWidth/8(a2)
+	move.l	d0,(a2)+
+	dbf		d7,.lp
+	add.l	#ScreenWidth/8*(Planes-1),a0
+	add.l	#ScreenWidth/8*(Planes-1),a1
+	add.l	#ScreenWidth/8*(Planes-1),a2
+	swap	d7
+	dbf		d7,.lp1
+
+	; r3g3b3r4 r0g0b0g4 r2g2b2XX r1g1b1b4
+
+	lea		colorR,a1
+	lea		colorG,a2
+	lea		colorB,a3
+	lea		pic,a0
+	move.w	#%1001100010001000,d0
+	move.w	#%0100010101000100,d0
+	move.w	#%0010001000110011,d0
+;	move.w	#%0000000000000001,d0
+	move.w	#0,d2
+	move.w	#32-1,d7
+.mb1:
+	swap	d7
+	move.w	#0,d0
+	move.w	#32-1,d7
+.mb:
+	move.w	d0,d3
+	add.w	d2,d3
+	asr.w	#1,d3
+	move.w	(a1,d0*2),d1
+	or.w	(a2,d2*2),d1
+	or.w	(a3,d3*2),d1
+	move.w	d1,(a0)+
+	add.w	#1,d0
+	dbf		d7,.mb
+	add.l	#(ScreenWidth/4-32)*2,a0
+	add.w	#1,d2
+	swap	d7
+	dbf		d7,.mb1
 	rts
 ;---------------------------------
-_Ham8_Deinit:
+_Ham7_Deinit:
 	move.l	#$fffffffe,CopperAdr
 	rts
 ;---------------------------------
-_Ham8_InnerLoop:
+_Ham7_InnerLoop:
 
 ;	move.w 	#$fff,$dff180
 
-	move.l	lastframe,d0
-	and.l	#127,d0
-	bne.b	te
+;	move.l	Screens,a0
+;	move.w	#ScreenWidth/32-1,d7
+;.fd:
+;	move.l	#$55555555,(a0)
+;	move.l	#$33333333,ScreenWidth/8(a0)
+;	move.l	#$0f0f0f0f,ScreenWidth/8*2(a0)
+;	move.l	#$00ff00ff,ScreenWidth/8*3(a0)
+;	move.l	#$0000ffff,ScreenWidth/8*4(a0)
+;	addq	#4,a0
+;	dbf		d7,.fd
+
+	lea	pic,a0 ;pointer to 15bit scrambled word chunkybuffer
+	move.l	Screens,a1	;pointer to interleaved 8bpl ham8 screen
+	jsr	SP_HAM7SCR
+
+;	move.l	lastframe,d0
+;	and.l	#127,d0
+;	bne.b	te
 	
 ;	move.l	_Frames,d0
 ;	move.l	d0,d1
@@ -168,12 +247,12 @@ _Ham8_InnerLoop:
 ;	add.l 	#2,lastframe
 
 	
-	bsr	RenderLoop
+;	bsr	RenderLoop
 
-	move.l	Screens,a0
-	add.l	#ScreenWidth/8*ScreenHeight*7,a0
+;	move.l	Screens,a0
+;	add.l	#ScreenWidth/8*ScreenHeight*7,a0
 ;	move.l	#$ffffffff,(a0)
-	add.l	#ScreenWidth/8-4,a0
+;	add.l	#ScreenWidth/8-4,a0
 ;	move.l	#$ffffffff,(a0)
 	
 	lea	Screens,a0
@@ -211,7 +290,7 @@ te:
 	add.l	#1,lastframe
 ;	move.w 	#$f00,$dff180	
 
-	move.l	Copper+8,d0
+	move.l	Copper,d0
 	move.w	d0,CopperAdr+6
 	swap	d0
 	move.w	d0,CopperAdr+2
@@ -308,7 +387,7 @@ DrawText:
 	lsr.w	#1,d1
 	lsl.w	#8,d1
 	or.w	d1,d0
-	move.w	d0,Scrolling+2
+;	move.w	d0,Scrolling+2
 
 	lea	Bitplane1_top,a0
 	move.l	#pic_top,d0
@@ -341,7 +420,10 @@ RenderLoop:
 	add.l 	d0,d0
 	add.l	d0,a0
 	move.l	Screens,A1		; destination (planar)
-	jsr	_BEST_c2p
+
+	lea	pic,a0 ;pointer to 15bit scrambled word chunkybuffer
+	move.l	Screens,a1	;pointer to interleaved 8bpl ham8 screen
+	jsr	SP_HAM7SCR
 
 	
 	move.l 	Screens,a3
@@ -509,16 +591,16 @@ down_pic:
 	ds.b	ScreenWidth/8*24*7
 ;-----------
 ; display dimensions
-DISPW           equ     ScreenWidth
+DISPW           equ     ScreenWidth/4
 DISPH           equ     ScreenHeight
-HSTART          equ     129+(256-DISPW)/4-32
-HEND 	        equ     HSTART+DISPW+64-$100
-VSTART          equ     36+(256-ScreenHeight)/2-8
+HSTART          equ     129+(256-DISPW)/4-64
+HEND 	        equ     HSTART+DISPW-$100+16
+VSTART          equ     36; +(256-ScreenHeight)/2-10
 VEND            equ     VSTART+DISPH
 DFETCHSTART     equ     HSTART/2
-DFETCHSTOP      equ     DFETCHSTART+16*((DISPW/32)-3)
+DFETCHSTOP      equ     DFETCHSTART+8*((DISPW/16)-1)
 
-MODE 			equ		HAM+COLORBURST+$11
+MODE 			equ		HIRES+HAM+COLORBURST+$11+$40
 MODE_DOWN		equ		0;COLORBURST+HIRES+$10
 ;-----------
 CopperBase:
@@ -543,41 +625,41 @@ Bitplane1_top:
 	dc.w	$00fc,$0000
 	dc.w	$00fe,$0000
 
-	dc.w	$0106,$0020
-	dc.w	$0182,$0fff
+;	dc.w	$0106,$0020
+;	dc.w	$0182,$0fff
 
-	dc.w	$008e,$2c00+HSTART+48
-	dc.w	$0090,$2c00+HEND-24
-	dc.w	$0092,DFETCHSTART
-	dc.w	$0094,DFETCHSTOP
-	dc.w	$0108,ScreenWidth/8
-	dc.w	$010a,ScreenWidth/8
-Scrolling:
-	dc.w	$0102,$0044
+;	dc.w	$008e,$2c00+HSTART+48
+;	dc.w	$0090,$2c00+HEND-24
+;	dc.w	$0092,DFETCHSTART
+;	dc.w	$0094,DFETCHSTOP
+;	dc.w	$0108,ScreenWidth/8
+;	dc.w	$010a,ScreenWidth/8
+;Scrolling:
+;	dc.w	$0102,$0044
 
-	dc.w	$0007+((VSTART-18)<<8),$fffe
-	dc.w	$0180,$044f
-	dc.w	$0007+((VSTART-17)<<8),$fffe
-	dc.w	$0180,$033f
-	dc.w	$0007+((VSTART-16)<<8),$fffe
-	dc.w	$0180,$022f
-	dc.w	$0007+((VSTART-15)<<8),$fffe
-	dc.w	$0180,$011f
-	dc.w	$0100,(0<<12)+MODE_DOWN
-	dc.w	$0007+((VSTART-14)<<8),$fffe
-	dc.w	$0180,$000f
+;	dc.w	$0007+((VSTART-18)<<8),$fffe
+;	dc.w	$0180,$044f
+;	dc.w	$0007+((VSTART-17)<<8),$fffe
+;	dc.w	$0180,$033f
+;	dc.w	$0007+((VSTART-16)<<8),$fffe
+;	dc.w	$0180,$022f
+;	dc.w	$0007+((VSTART-15)<<8),$fffe
+;	dc.w	$0180,$011f
+;	dc.w	$0100,(0<<12)+MODE_DOWN
+;	dc.w	$0007+((VSTART-14)<<8),$fffe
+;	dc.w	$0180,$000f
 
-	dc.w	$0007+((VSTART-8)<<8),$fffe
-	dc.w	$0180,$011f
-	dc.w	$0007+((VSTART-7)<<8),$fffe
-	dc.w	$0180,$022f
-	dc.w	$0100,$0000
-	dc.w	$0007+((VSTART-6)<<8),$fffe
-	dc.w	$0180,$033f
-	dc.w	$0007+((VSTART-5)<<8),$fffe
-	dc.w	$0180,$044f
-	dc.w	$0007+((VSTART-4)<<8),$fffe
-	dc.w	$0180,$0000
+;	dc.w	$0007+((VSTART-8)<<8),$fffe
+;	dc.w	$0180,$011f
+;	dc.w	$0007+((VSTART-7)<<8),$fffe
+;	dc.w	$0180,$022f
+;	dc.w	$0100,$0000
+;	dc.w	$0007+((VSTART-6)<<8),$fffe
+;	dc.w	$0180,$033f
+;	dc.w	$0007+((VSTART-5)<<8),$fffe
+;	dc.w	$0180,$044f
+;	dc.w	$0007+((VSTART-4)<<8),$fffe
+;	dc.w	$0180,$0000
 
 ColorCopper:
 	dc.w	$0106,$0020
@@ -729,11 +811,15 @@ Copper1:
 	dc.w	$0090,$2c00+HEND
 	dc.w	$0092,DFETCHSTART
 	dc.w	$0094,DFETCHSTOP
-	dc.w	$0108,0 ; ScreenWidth/8*(Planes-1)
-	dc.w	$010a,0 ; ScreenWidth/8*(Planes-1)
-	dc.w	$0102,$0044
+	dc.w	$0108,ScreenWidth/8*(Planes-1)
+	dc.w	$010a,ScreenWidth/8*(Planes-1)
+	dc.w	$0102,$0000
 	dc.w	$0104,$0200
 Bitplane1:
+	dc.w	$00e0,$0000
+	dc.w	$00e2,$0000
+	dc.w	$00e4,$0000
+	dc.w	$00e6,$0000
 	dc.w	$00e8,$0000
 	dc.w	$00ea,$0000
 	dc.w	$00ec,$0000
@@ -746,12 +832,8 @@ Bitplane1:
 	dc.w	$00fa,$0000
 	dc.w	$00fc,$0000
 	dc.w	$00fe,$0000
-	dc.w	$00e0,$0000
-	dc.w	$00e2,$0000
-	dc.w	$00e4,$0000
-	dc.w	$00e6,$0000
 
-	dc.w	$0106,$0020
+	dc.w	$0106,$00c0
 	dc.w	$0007+(VSTART<<8),$fffe
 	dc.w	$0100,(Pl<<12)+MODE
 	dc.w	$0007+((VEND&$ff)<<8),$fffe
@@ -769,11 +851,15 @@ Copper2:
 	dc.w	$0090,$2c00+HEND
 	dc.w	$0092,DFETCHSTART
 	dc.w	$0094,DFETCHSTOP
-	dc.w	$0108,0 ; ScreenWidth/8*(Planes-1)
-	dc.w	$010a,0 ; ScreenWidth/8*(Planes-1)
-	dc.w	$0102,$0044
+	dc.w	$0108,ScreenWidth/8*(Planes-1)
+	dc.w	$010a,ScreenWidth/8*(Planes-1)
+	dc.w	$0102,$0000
 	dc.w	$0104,$0200
 Bitplane2:
+	dc.w	$00e0,$0000
+	dc.w	$00e2,$0000
+	dc.w	$00e4,$0000
+	dc.w	$00e6,$0000
 	dc.w	$00e8,$0000
 	dc.w	$00ea,$0000
 	dc.w	$00ec,$0000
@@ -786,10 +872,6 @@ Bitplane2:
 	dc.w	$00fa,$0000
 	dc.w	$00fc,$0000
 	dc.w	$00fe,$0000
-	dc.w	$00e0,$0000
-	dc.w	$00e2,$0000
-	dc.w	$00e4,$0000
-	dc.w	$00e6,$0000
 
 	dc.w	$0106,$0020
 	dc.w	$0007+(VSTART<<8),$fffe
@@ -809,11 +891,15 @@ Copper3:
 	dc.w	$0090,$2c00+HEND
 	dc.w	$0092,DFETCHSTART
 	dc.w	$0094,DFETCHSTOP
-	dc.w	$0108,0 ; ScreenWidth/8*(Planes-1)
-	dc.w	$010a,0 ; ScreenWidth/8*(Planes-1)
-	dc.w	$0102,$0044
+	dc.w	$0108,ScreenWidth/8*(Planes-1)
+	dc.w	$010a,ScreenWidth/8*(Planes-1)
+	dc.w	$0102,$0000
 	dc.w	$0104,$0200
 Bitplane3:
+	dc.w	$00e0,$0000
+	dc.w	$00e2,$0000
+	dc.w	$00e4,$0000
+	dc.w	$00e6,$0000
 	dc.w	$00e8,$0000
 	dc.w	$00ea,$0000
 	dc.w	$00ec,$0000
@@ -826,10 +912,6 @@ Bitplane3:
 	dc.w	$00fa,$0000
 	dc.w	$00fc,$0000
 	dc.w	$00fe,$0000
-	dc.w	$00e0,$0000
-	dc.w	$00e2,$0000
-	dc.w	$00e4,$0000
-	dc.w	$00e6,$0000
 
 	dc.w	$0106,$0020
 	dc.w	$0007+(VSTART<<8),$fffe
@@ -843,6 +925,11 @@ CopperAdr3:
 	dc.w	$0088,$0000
 	
 SecondCopperList:
+CopperAdrEnd:
+	dc.w	$0080,$0000
+	dc.w	$0082,$0000
+	dc.w	$ffff,$fffe
+SecondCopperListEnd:
 BitplaneSecond:
 	dc.w	$00e0,$0000
 	dc.w	$00e2,$0000
@@ -956,11 +1043,11 @@ CY:	dc.w	$0180,$044f
 	dc.w	$0182,$0fff
 	dc.w	$0007+(((VEND+33)&$ff)<<8),$fffe
 	dc.w	$0180,$0000
-CopperAdrEnd:
-	dc.w	$0080,$0000
-	dc.w	$0082,$0000
-	dc.w	$ffff,$fffe
-SecondCopperListEnd:
+;CopperAdrEnd:
+;	dc.w	$0080,$0000
+;	dc.w	$0082,$0000
+;	dc.w	$ffff,$fffe
+;SecondCopperListEnd:
 ;--------------------------------------------------------------------
 *********************************************************************
 	section mem,BSS_C
@@ -1080,6 +1167,110 @@ filenameSnd:
 	even
 font8x8_basic:
 	incbin	font.bmp
+	even
+	; r3g3b3r4 r0g0b0g4 r2g2b2XX r1g1b1b4
+
+colorR:
+	dc.w	%0000000000000000
+	dc.w	%0000100000000000
+	dc.w	%0000000000001000
+	dc.w	%0000100000001000
+	dc.w	%0000000010000000
+	dc.w	%0000100010000000
+	dc.w	%0000000010001000
+	dc.w	%0000100010001000
+	dc.w	%1000000000000000
+	dc.w	%1000100000000000
+	dc.w	%1000000000001000
+	dc.w	%1000100000001000
+	dc.w	%1000000010000000
+	dc.w	%1000100010000000
+	dc.w	%1000000010001000
+	dc.w	%1000100010001000
+	dc.w	%0001000000000000
+	dc.w	%0001100000000000
+	dc.w	%0001000000001000
+	dc.w	%0001100000001000
+	dc.w	%0001000010000000
+	dc.w	%0001100010000000
+	dc.w	%0001000010001000
+	dc.w	%0001100010001000
+	dc.w	%1001000000000000
+	dc.w	%1001100000000000
+	dc.w	%1001000000001000
+	dc.w	%1001100000001000
+	dc.w	%1001000010000000
+	dc.w	%1001100010000000
+	dc.w	%1001000010001000
+	dc.w	%1001100010001000
+
+colorG:
+	dc.w	%0000000000000000
+	dc.w	%0000010000000000
+	dc.w	%0000000000000100
+	dc.w	%0000010000000100
+	dc.w	%0000000001000000
+	dc.w	%0000010001000000
+	dc.w	%0000000001000100
+	dc.w	%0000010001000100
+	dc.w	%0100000000000000
+	dc.w	%0100010000000000
+	dc.w	%0100000000000100
+	dc.w	%0100010000000100
+	dc.w	%0100000001000000
+	dc.w	%0100010001000000
+	dc.w	%0100000001000100
+	dc.w	%0100010001000100
+	dc.w	%0000000100000000
+	dc.w	%0000010100000000
+	dc.w	%0000000100000100
+	dc.w	%0000010100000100
+	dc.w	%0000000101000000
+	dc.w	%0000010101000000
+	dc.w	%0000000101000100
+	dc.w	%0000010101000100
+	dc.w	%0100000100000000
+	dc.w	%0100010100000000
+	dc.w	%0100000100000100
+	dc.w	%0100010100000100
+	dc.w	%0100000101000000
+	dc.w	%0100010101000000
+	dc.w	%0100000101000100
+	dc.w	%0100010101000100
+
+colorB:
+	dc.w	%0000000000000000
+	dc.w	%0000001000000000
+	dc.w	%0000000000000010
+	dc.w	%0000001000000010
+	dc.w	%0000000000100000
+	dc.w	%0000001000100000
+	dc.w	%0000000000100010
+	dc.w	%0000001000100010
+	dc.w	%0010000000000000
+	dc.w	%0010001000000000
+	dc.w	%0010000000000010
+	dc.w	%0010001000000010
+	dc.w	%0010000000100000
+	dc.w	%0010001000100000
+	dc.w	%0010000000100010
+	dc.w	%0010001000100010
+	dc.w	%0000000000000001	
+	dc.w	%0000001000000001	
+	dc.w	%0000000000000011
+	dc.w	%0000001000000011
+	dc.w	%0000000000100001
+	dc.w	%0000001000100001
+	dc.w	%0000000000100011
+	dc.w	%0000001000100011
+	dc.w	%0010000000000001
+	dc.w	%0010001000000001
+	dc.w	%0010000000000011
+	dc.w	%0010001000000011
+	dc.w	%0010000000100001
+	dc.w	%0010001000100001
+	dc.w	%0010000000100011
+	dc.w	%0010001000100011
 text:
 	incbin	text.txt
 	dc.b	0

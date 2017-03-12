@@ -144,6 +144,7 @@
   <ItemGroup>
     <ClCompile Include="ham_convert\dct.cpp" />
     <ClCompile Include="ham_convert\defines.cpp" />
+    <ClCompile Include="ham_convert\emboss.cpp" />
     <ClCompile Include="ham_convert\exoquant.cpp" />
     <ClCompile Include="ham_convert\fft.cpp" />
     <ClCompile Include="ham_convert\frame.cpp" />
@@ -156,6 +157,7 @@
   <ItemGroup>
     <ClInclude Include="ham_convert\dct.h" />
     <ClInclude Include="ham_convert\defines.h" />
+    <ClInclude Include="ham_convert\emboss.h" />
     <ClInclude Include="ham_convert\exoquant.h" />
     <ClInclude Include="ham_convert\fft.h" />
     <ClInclude Include="ham_convert\frame.h" />

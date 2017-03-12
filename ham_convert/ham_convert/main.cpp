@@ -61,7 +61,7 @@ int main(int argc, const char * argv[])
 //	convertSequence("cocoon", 0,2000, 2);
 	//	convertSequence("cocoon", 6000, 3);
 	//    convertSequence("test",1,2);
-	convertSequence("sc", 7906, 40, 2);
+	convertSequence("sc", 7906, 10, 1);
 	//	convertSequence("cocoon_hd", 0, 11161, 1);
 //	convertSequence("ghost_hd", 0, 3235, 1);
 //	convertSequence("nvidia_hd", 0, 4260, 1);
@@ -155,12 +155,9 @@ void convertSequence(const char *path,int start,int Len,int zz)
     }
 	printf("pre = %i/%i\n", pre, ren);
 }
-void doDCT(unsigned char*mem,int w,int h)
+void doDCT(unsigned char *mem,int w,int h)
 {
-#ifdef DCT_CALC
 	float *y_ = (float*)malloc(sizeof(float) * CT_DIM * CT_DIM);
-	float *u_ = (float*)malloc(sizeof(float) * CT_DIM * CT_DIM);
-	float *v_ = (float*)malloc(sizeof(float) * CT_DIM * CT_DIM);
 	for (int y = 0; y < h; y += CT_DIM)
 	{
 		for (int x = 0; x < w; x += CT_DIM)
@@ -169,46 +166,27 @@ void doDCT(unsigned char*mem,int w,int h)
 			{
 				for (int xx = 0; xx < CT_DIM; xx++)
 				{
-					float b = (float)((unsigned int)mem[(x + xx) * 3 + (Height - 1 - (y + yy)) * 3 * w]) / 256.0;
-					float g = (float)((unsigned int)mem[(x + xx) * 3 + (Height - 1 - (y + yy)) * 3 * w + 1]) / 256.0;
-					float r = (float)((unsigned int)mem[(x + xx) * 3 + (Height - 1 - (y + yy)) * 3 * w + 2]) / 256.0;
-					y_[yy * CT_DIM + xx] = yuv_matrix[0][0] * (float)r + yuv_matrix[0][1] * (float)g + yuv_matrix[0][2] * (float)b;
-					u_[yy * CT_DIM + xx] = yuv_matrix[1][0] * (float)r + yuv_matrix[1][1] * (float)g + yuv_matrix[1][2] * (float)b;
-					v_[yy * CT_DIM + xx] = yuv_matrix[2][0] * (float)r + yuv_matrix[2][1] * (float)g + yuv_matrix[2][2] * (float)b;
+					float b = (float)((unsigned int)mem[(x + xx) + (y + yy) * w]) / 256.0;
+					y_[yy * CT_DIM + xx] = b;
 				}
 			}
 			DCT *dct_y = new DCT(CT_DIM, CT_DIM, y_);
-			DCT *dct_u = new DCT(CT_DIM, CT_DIM, u_);
-			DCT *dct_v = new DCT(CT_DIM, CT_DIM, v_);
 
 			for (int yy = 0; yy < CT_DIM; yy++)
 			{
 				for (int xx = 0; xx < CT_DIM; xx++)
 				{
-					float r = yuv_imatrix[0][0] * y_[yy * CT_DIM + xx] + yuv_imatrix[0][1] * u_[yy * CT_DIM + xx] + yuv_imatrix[0][2] * v_[yy * CT_DIM + xx];
-					float g = yuv_imatrix[1][0] * y_[yy * CT_DIM + xx] + yuv_imatrix[1][1] * u_[yy * CT_DIM + xx] + yuv_imatrix[1][2] * v_[yy * CT_DIM + xx];
-					float b = yuv_imatrix[2][0] * y_[yy * CT_DIM + xx] + yuv_imatrix[2][1] * u_[yy * CT_DIM + xx] + yuv_imatrix[2][2] * v_[yy * CT_DIM + xx];
+					float r = y_[yy * CT_DIM + xx];
 					if (r < 0) r = 0;
-					if (g < 0) g = 0;
-					if (b < 0) b = 0;
 					if (r > 1.0) r = 1.0;
-					if (g > 1.0) g = 1.0;
-					if (b > 1.0) b = 1.0;
-					mem[(x + xx) * 3 + (Height - 1 - (y + yy)) * 3 * w] = b * 255.0;
-					mem[(x + xx) * 3 + (Height - 1 - (y + yy)) * 3 * w + 1] = g * 255.0;
-					mem[(x + xx) * 3 + (Height - 1 - (y + yy)) * 3 * w + 2] = r * 255.0;
+					mem[(x + xx) + (y + yy) * w] = r * 255.0;
 				}
 			}
 
 			delete dct_y;
-			delete dct_u;
-			delete dct_v;
 		}
 	}
 	free(y_);
-	free(u_);
-	free(v_);
-#endif
 }
 void doFFT(unsigned char*mem)
 {

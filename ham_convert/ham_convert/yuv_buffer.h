@@ -3,6 +3,7 @@
 #include <iostream>
 #include <algorithm>
 #include "defines.h"
+#include "emboss.h"
 
 class PRE_PARA
 {
@@ -22,7 +23,8 @@ public:
 	}
 };
 //#define MOVEPRE_COM_UV
-#define MOVEPRE_COM_YUV
+//#define MOVEPRE_COM_YUV
+#define MOVEPRE_COM_Y
 class MOVEPRE
 {
 public:
@@ -48,7 +50,9 @@ public:
 #if defined(MOVEPRE_COM_UV)
 		return (p_u.MAD + p_v.MAD) / 2.0 / (float)getMPC();
 #elif defined(MOVEPRE_COM_YUV)
-		return (p_y.MSE * 0.58 + p_u.MSE * 0.3 + p_v.MSE * 0.12);
+		return (p_y.MSE + p_u.MSE + p_v.MSE) / 3.0;
+#elif defined(MOVEPRE_COM_Y)
+		return (p_y.MSE);
 #endif
 //		return (p_y.MAD + p_u.MAD + p_v.MAD) / 3.0;
 	};
@@ -57,8 +61,10 @@ public:
 #if defined(MOVEPRE_COM_UV)
 		int min = std::min(p_u.MPC, p_v.MPC);
 #elif  defined(MOVEPRE_COM_YUV)
-		int min = std::min(p_u.MPC, p_v.MPC); 
+		int min = std::min(p_u.MPC, p_v.MPC);
 		min = std::min(p_y.MPC, p_v.MPC);
+#elif  defined(MOVEPRE_COM_Y)
+		int min = p_y.MPC;
 #endif
 		return min;
 	}
@@ -67,14 +73,19 @@ public:
 class YUV_BUFFER
 {
 public:
+#define TOCHECK mem_y
 	YUV_BUFFER()
 	{
 		mem_y = 0;
 		mem_u = 0;
 		mem_v = 0;
+		emboss = 0;
 	}
 	YUV_BUFFER(int w, int h)
 	{
+		emboss = 0;
+		_Width = w;
+		_Height = h;
 		mem_y = (unsigned char *)malloc(w * h);
 		mem_u = (unsigned char *)malloc(w * h);
 		mem_v = (unsigned char *)malloc(w * h);
@@ -84,13 +95,18 @@ public:
 		if (mem_y) free(mem_y);
 		if (mem_u) free(mem_u);
 		if (mem_v) free(mem_v);
+		if (emboss) delete emboss;
 	}
+	void createEmboss();
 	MOVEPRE movepre(int x,int y,YUV_BUFFER *org);
 	unsigned char *mem_y;
 	unsigned char *mem_u;
 	unsigned char *mem_v;
 private:
 	MOVEPRE YUV_BUFFER::checkpos(int x, int y, int x_s, int y_s, YUV_BUFFER *org);
+	EMBOSS *emboss;
+	int _Width;
+	int _Height;
 };
 
 #endif

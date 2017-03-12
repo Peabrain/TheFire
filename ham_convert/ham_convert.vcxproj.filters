@@ -45,6 +45,9 @@
     <ClCompile Include="ham_convert\yuv_buffer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ham_convert\emboss.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ham_convert\dct.h">
@@ -72,6 +75,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ham_convert\yuv_buffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ham_convert\emboss.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
