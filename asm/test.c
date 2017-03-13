@@ -411,9 +411,9 @@ void	PreHam7(__reg("a0") short *Memory)
 		{
 			for(v = 0;v < 32;v++)
 			{
-				r = (yuv_imatrix[0][0] * y + yuv_imatrix[0][1] * (u - 16) + yuv_imatrix[0][2] * (v - 16)) >> SCALE_SHIFT;
-				g = (yuv_imatrix[1][0] * y + yuv_imatrix[1][1] * (u - 16) + yuv_imatrix[1][2] * (v - 16)) >> SCALE_SHIFT;
-				b = (yuv_imatrix[2][0] * y + yuv_imatrix[2][1] * (u - 16) + yuv_imatrix[2][2] * (v - 16)) >> SCALE_SHIFT;
+				r = (yuv_imatrix[0][0] * y + yuv_imatrix[0][1] * (u - 16) + yuv_imatrix[0][2] * (v - 16) + (1 << (SCALE_SHIFT - 1))) >> SCALE_SHIFT;
+				g = (yuv_imatrix[1][0] * y + yuv_imatrix[1][1] * (u - 16) + yuv_imatrix[1][2] * (v - 16) + (1 << (SCALE_SHIFT - 1))) >> SCALE_SHIFT;
+				b = (yuv_imatrix[2][0] * y + yuv_imatrix[2][1] * (u - 16) + yuv_imatrix[2][2] * (v - 16) + (1 << (SCALE_SHIFT - 1))) >> SCALE_SHIFT;
 				if(r < 0) r = 0;
 				if(g < 0) g = 0;
 				if(b < 0) b = 0;
