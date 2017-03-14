@@ -270,9 +270,32 @@ Switch:
 	rts
 ;--------------------------------------------------------------------	
 copyblock_empty:
-	movem.l	d6/a0-a2,-(sp)
+	movem.l	d0/d1/d2/d3/d6/a1/a2,-(sp)
+	move.w	(a0)+,d6
+	cmp.w	#0,d6
+	bne.b	.cbe1
+	move.w	(a0)+,d6
+	move.w	d6,d0
+	swap	d0
+	move.w	d6,d0
 	move.w	#15,d6
-.cbe0:
+.cbe0_0:
+	move.l	d0,(a2)+
+	move.l	d0,(a2)+
+	move.l	d0,(a2)+
+	move.l	d0,(a2)+
+	move.l	d0,(a2)+
+	move.l	d0,(a2)+
+	move.l	d0,(a2)+
+	move.l	d0,(a2)+
+	add.l	#(320-16)*2,a2
+	dbf		d6,.cbe0_0
+	bra.b	.cbe_end
+.cbe1:	
+	cmp.w	#1,d6
+	bne.b	.cbe2
+	move.w	#15,d6
+.cbe1_0:
 	move.l	(a0)+,(a2)+
 	move.l	(a0)+,(a2)+
 	move.l	(a0)+,(a2)+
@@ -282,17 +305,252 @@ copyblock_empty:
 	move.l	(a0)+,(a2)+
 	move.l	(a0)+,(a2)+
 	add.l	#(320-16)*2,a2
-	dbf		d6,.cbe0
-	movem.l	(sp)+,d6/a0-a2
+	dbf		d6,.cbe1_0
+	bra.b	.cbe_end
+.cbe2:
+	cmp.w	#2,d6
+	bne.b	.cbe3
+	move.l	a0,a1
+	add.l	#16*2,a0
+	move.w	#16-1,d6
+.cbe2_1:
+	move.l	(a0)+,d0
+	move.w	d0,d1
+	and.w	#$f,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#4,d0
+	swap	d2
+	move.w	d0,d1
+	and.w	#$f,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#4,d0
+	move.l	d2,(a2)+
+	move.w	d0,d1
+	and.w	#$f,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#4,d0
+	swap	d2
+	move.w	d0,d1
+	and.w	#$f,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#4,d0
+	move.l	d2,(a2)+
+	move.w	d0,d1
+	and.w	#$f,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#4,d0
+	swap	d2
+	move.w	d0,d1
+	and.w	#$f,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#4,d0
+	move.l	d2,(a2)+
+	move.w	d0,d1
+	and.w	#$f,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#4,d0
+	swap	d2
+	move.w	d0,d1
+	and.w	#$f,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#4,d0
+	move.l	d2,(a2)+
+	move.l	(a0)+,d0
+	move.w	d0,d1
+	and.w	#$f,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#4,d0
+	swap	d2
+	move.w	d0,d1
+	and.w	#$f,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#4,d0
+	move.l	d2,(a2)+
+	move.w	d0,d1
+	and.w	#$f,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#4,d0
+	swap	d2
+	move.w	d0,d1
+	and.w	#$f,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#4,d0
+	move.l	d2,(a2)+
+	move.w	d0,d1
+	and.w	#$f,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#4,d0
+	swap	d2
+	move.w	d0,d1
+	and.w	#$f,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#4,d0
+	move.l	d2,(a2)+
+	move.w	d0,d1
+	and.w	#$f,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#4,d0
+	swap	d2
+	move.w	d0,d1
+	and.w	#$f,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#4,d0
+	move.l	d2,(a2)+
+	add.l	#(320-16)*2,a2
+	dbf		d6,.cbe2_1
+	bra.b	.cbe_end
+.cbe3:
+;	add.l	#4*2+16*16/8,a0
+;	bra.b	.cbe_end
+	move.l	a0,a1
+	add.l	#4*2,a0
+	move.w	#16-1,d6
+.cbe3_1:
+	move.l	(a0)+,d0
+	move.w	d0,d1
+	and.w	#$3,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#2,d0
+	swap	d2
+	move.w	d0,d1
+	and.w	#$3,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#2,d0
+	move.l	d2,(a2)+
+	move.w	d0,d1
+	and.w	#$3,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#2,d0
+	swap	d2
+	move.w	d0,d1
+	and.w	#$3,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#2,d0
+	move.l	d2,(a2)+
+	move.w	d0,d1
+	and.w	#$3,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#2,d0
+	swap	d2
+	move.w	d0,d1
+	and.w	#$3,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#2,d0
+	move.l	d2,(a2)+
+	move.w	d0,d1
+	and.w	#$3,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#2,d0
+	swap	d2
+	move.w	d0,d1
+	and.w	#$3,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#2,d0
+	move.l	d2,(a2)+
+	move.w	d0,d1
+	and.w	#$3,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#2,d0
+	swap	d2
+	move.w	d0,d1
+	and.w	#$3,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#2,d0
+	move.l	d2,(a2)+
+	move.w	d0,d1
+	and.w	#$3,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#2,d0
+	swap	d2
+	move.w	d0,d1
+	and.w	#$3,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#2,d0
+	move.l	d2,(a2)+
+	move.w	d0,d1
+	and.w	#$3,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#2,d0
+	swap	d2
+	move.w	d0,d1
+	and.w	#$3,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#2,d0
+	move.l	d2,(a2)+
+	move.w	d0,d1
+	and.w	#$3,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#2,d0
+	swap	d2
+	move.w	d0,d1
+	and.w	#$3,d1
+	move.w	(a1,d1.w*2),d2
+	lsr.l	#2,d0
+	move.l	d2,(a2)+
+	add.l	#(320-16)*2,a2
+	dbf		d6,.cbe3_1
+	bra.b	.cbe_end
+.cbe_end:
+	movem.l	(sp)+,d0/d1/d2/d3/d6/a1/a2
 	rts
 ;--------------------------------------------------------------------	
 copyblock:
-	movem.l	d0/d6/d7/a0-a2,-(sp)
+	movem.l	d0/d1/d4/d6/d7/a1/a2/a3,-(sp)
 	add.l	d0,a1
 	add.l	d0,a1
+	move.w	(a0)+,d6
+	cmp.w	#0,d6
+	bne.b	.cb1
+	move.w	(a0)+,d6
+	move.w	d6,d1
+	swap	d1
+	move.w	d6,d1
+
 	move.l	#$7fff7fff,d7
 	move.w	#15,d6
-.cb0:
+.cb0_1:
+	move.l	d1,d0
+	add.l	(a1)+,d0
+	and.l	d7,d0
+	move.l	d0,(a2)+
+	move.l	d1,d0
+	add.l	(a1)+,d0
+	and.l	d7,d0
+	move.l	d0,(a2)+
+	move.l	d1,d0
+	add.l	(a1)+,d0
+	and.l	d7,d0
+	move.l	d0,(a2)+
+	move.l	d1,d0
+	add.l	(a1)+,d0
+	and.l	d7,d0
+	move.l	d0,(a2)+
+	move.l	d1,d0
+	add.l	(a1)+,d0
+	and.l	d7,d0
+	move.l	d0,(a2)+
+	move.l	d1,d0
+	add.l	(a1)+,d0
+	and.l	d7,d0
+	move.l	d0,(a2)+
+	move.l	d1,d0
+	add.l	(a1)+,d0
+	and.l	d7,d0
+	move.l	d0,(a2)+
+	move.l	d1,d0
+	add.l	(a1)+,d0
+	and.l	d7,d0
+	move.l	d0,(a2)+
+	add.l	#(320-16)*2,a1
+	add.l	#(320-16)*2,a2
+	dbf		d6,.cb0_1
+	bra.b	.cb_end 
+.cb1:
+	cmp.w	#1,d6
+	bne.b	.cb2
+	move.l	#$7fff7fff,d7
+	move.w	#15,d6
+.cb1_1:
 	move.l	(a0)+,d0
 	add.l	(a1)+,d0
 	and.l	d7,d0
@@ -327,8 +585,230 @@ copyblock:
 	move.l	d0,(a2)+
 	add.l	#(320-16)*2,a1
 	add.l	#(320-16)*2,a2
-	dbf		d6,.cb0
-	movem.l	(sp)+,d0/d6/d7/a0-a2
+	dbf		d6,.cb1_1
+	bra.b 	.cb_end
+	
+.cb2:
+	cmp.w	#2,d6
+	bne.b	.cb3
+	move.l	a0,a3
+	add.l	#16*2,a0
+	move.l	#$7fff7fff,d7
+
+	move.w	#16-1,d6
+.cb2_1:
+	move.l	(a0)+,d4
+	move.w	d4,d1
+	and.w	#$f,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#4,d4
+	move.w	d4,d1
+	swap	d0
+	and.w	#$f,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#4,d4
+	add.l	(a1)+,d0
+	and.l	d7,d0
+	move.l	d0,(a2)+
+	move.w	d4,d1
+	and.w	#$f,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#4,d4
+	move.w	d4,d1
+	swap	d0
+	and.w	#$f,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#4,d4
+	add.l	(a1)+,d0
+	and.l	d7,d0
+	move.l	d0,(a2)+
+	move.w	d4,d1
+	and.w	#$f,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#4,d4
+	move.w	d4,d1
+	swap	d0
+	and.w	#$f,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#4,d4
+	add.l	(a1)+,d0
+	and.l	d7,d0
+	move.l	d0,(a2)+
+	move.w	d4,d1
+	and.w	#$f,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#4,d4
+	move.w	d4,d1
+	swap	d0
+	and.w	#$f,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#4,d4
+	add.l	(a1)+,d0
+	and.l	d7,d0
+	move.l	d0,(a2)+
+	move.l	(a0)+,d4
+	move.w	d4,d1
+	and.w	#$f,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#4,d4
+	move.w	d4,d1
+	swap	d0
+	and.w	#$f,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#4,d4
+	add.l	(a1)+,d0
+	and.l	d7,d0
+	move.l	d0,(a2)+
+	move.w	d4,d1
+	and.w	#$f,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#4,d4
+	move.w	d4,d1
+	swap	d0
+	and.w	#$f,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#4,d4
+	add.l	(a1)+,d0
+	and.l	d7,d0
+	move.l	d0,(a2)+
+	move.w	d4,d1
+	and.w	#$f,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#4,d4
+	move.w	d4,d1
+	swap	d0
+	and.w	#$f,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#4,d4
+	add.l	(a1)+,d0
+	and.l	d7,d0
+	move.l	d0,(a2)+
+	move.w	d4,d1
+	and.w	#$f,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#4,d4
+	move.w	d4,d1
+	swap	d0
+	and.w	#$f,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#4,d4
+	add.l	(a1)+,d0
+	and.l	d7,d0
+	move.l	d0,(a2)+
+	add.l	#(320-16)*2,a1
+	add.l	#(320-16)*2,a2
+	dbf		d6,.cb2_1
+	bra.b 	.cb_end
+.cb3:
+	move.l	a0,a3
+	add.l	#4*2,a0
+	move.l	#$7fff7fff,d7
+
+	move.w	#16-1,d6
+.cb3_1:
+	move.l	(a0)+,d4
+	move.w	d4,d1
+	and.w	#$3,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#2,d4
+	move.w	d4,d1
+	swap	d0
+	and.w	#$3,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#2,d4
+	add.l	(a1)+,d0
+	and.l	d7,d0
+	move.l	d0,(a2)+
+	move.w	d4,d1
+	and.w	#$3,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#2,d4
+	move.w	d4,d1
+	swap	d0
+	and.w	#$3,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#2,d4
+	add.l	(a1)+,d0
+	and.l	d7,d0
+	move.l	d0,(a2)+
+	move.w	d4,d1
+	and.w	#$3,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#2,d4
+	move.w	d4,d1
+	swap	d0
+	and.w	#$3,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#2,d4
+	add.l	(a1)+,d0
+	and.l	d7,d0
+	move.l	d0,(a2)+
+	move.w	d4,d1
+	and.w	#$3,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#2,d4
+	move.w	d4,d1
+	swap	d0
+	and.w	#$3,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#2,d4
+	add.l	(a1)+,d0
+	and.l	d7,d0
+	move.l	d0,(a2)+
+	move.w	d4,d1
+	and.w	#$3,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#2,d4
+	move.w	d4,d1
+	swap	d0
+	and.w	#$3,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#2,d4
+	add.l	(a1)+,d0
+	and.l	d7,d0
+	move.l	d0,(a2)+
+	move.w	d4,d1
+	and.w	#$3,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#2,d4
+	move.w	d4,d1
+	swap	d0
+	and.w	#$3,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#2,d4
+	add.l	(a1)+,d0
+	and.l	d7,d0
+	move.l	d0,(a2)+
+	move.w	d4,d1
+	and.w	#$3,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#2,d4
+	move.w	d4,d1
+	swap	d0
+	and.w	#$3,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#2,d4
+	add.l	(a1)+,d0
+	and.l	d7,d0
+	move.l	d0,(a2)+
+	move.w	d4,d1
+	and.w	#$3,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#2,d4
+	move.w	d4,d1
+	swap	d0
+	and.w	#$3,d1
+	move.w	(a3,d1.w*2),d0
+	lsr.l	#2,d4
+	add.l	(a1)+,d0
+	and.l	d7,d0
+	move.l	d0,(a2)+
+	add.l	#(320-16)*2,a1
+	add.l	#(320-16)*2,a2
+	dbf		d6,.cb3_1
+	bra.b 	.cb_end
+.cb_end:
+	movem.l	(sp)+,d0/d1/d4/d6/d7/a1/a2/a3
 	rts
 ;--------------------------------------------------------------------	
 DrawText:
@@ -449,22 +929,8 @@ RenderImage:
 .lgd2_:
 	move.w	#320/16-1,d7
 .lgd1_:
-	move.l	a2,a1
-	swap	d7
-	move.w	#16-1,d7
-.lgd1:
-	move.l	(a0)+,(a1)+
-	move.l	(a0)+,(a1)+
-	move.l	(a0)+,(a1)+
-	move.l	(a0)+,(a1)+
-	move.l	(a0)+,(a1)+
-	move.l	(a0)+,(a1)+
-	move.l	(a0)+,(a1)+
-	move.l	(a0)+,(a1)+
-	add.l	#(320-16)*2,a1
-	dbf		d7,.lgd1
+	bsr.b	copyblock_empty
 	add.l	#16*2,a2
-	swap	d7
 	dbf		d7,.lgd1_
 	add.l	#(320*(16-1))*2,a2
 	dbf		d6,.lgd2_
@@ -495,7 +961,6 @@ RenderImage:
 .ldg:	
 	bsr		copyblock_empty
 .ldg1:
-	add.l	#16*16*2,a0
 	add.l	#16*2,a2
 	dbf		d6,.cp0
 	add.l	#320*(16-1)*2,a2
@@ -1276,6 +1741,7 @@ picorg:
 ;	ds.b	(ScreenWidth*ScreenHeight+ScreenWidth/16*ScreenHeight/16)*2+8
 	incbin	tmp000.ppm
 	incbin	tmp001.ppm
+;picorgend:
 	incbin	tmp002.ppm
 	incbin	tmp003.ppm
 	incbin	tmp004.ppm
