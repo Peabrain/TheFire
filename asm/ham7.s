@@ -201,7 +201,7 @@ _Ham7_Deinit:
 ;---------------------------------
 _Ham7_InnerLoop:
 
-	move.w 	#$fff,$dff180
+;	move.w 	#$fff,$dff180
 	
 	bsr	RenderLoop
 	
@@ -272,6 +272,7 @@ Switch:
 copyblock_empty:
 	movem.l	d0/d1/d2/d3/d6/a1/a2,-(sp)
 	move.w	(a0)+,d6
+	and.w	#$f,d6
 	cmp.w	#0,d6
 	bne.b	.cbe1
 	move.w	(a0)+,d6
@@ -499,6 +500,7 @@ copyblock:
 	add.l	d0,a1
 	add.l	d0,a1
 	move.w	(a0)+,d6
+	and.w	#$f,d6
 	cmp.w	#0,d6
 	bne.b	.cb1
 	move.w	(a0)+,d6
