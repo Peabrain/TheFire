@@ -51,7 +51,7 @@ public:
 	int stride[3];
 };
 //SRC Src[100];
-int maxframes = 1000;
+int maxframes = 10000;
 
 /*class VECTOR
 {
@@ -88,13 +88,13 @@ public:
 	BLOCK(int w,int h,unsigned short *mem,unsigned short mov)
 	{
 		blockPck = 0;
-		block = new unsigned short[w * h];
+		block = (unsigned short*)malloc(sizeof(unsigned short) *w * h);
 		memcpy(block,mem,sizeof(unsigned short) * w * h);
 		movement = mov;
 	}
 	virtual ~BLOCK()
 	{
-		delete[] block;
+		free(block);
 		if (blockPck) free(blockPck);
 	}
 
@@ -113,8 +113,8 @@ public:
 			unsigned short c = mem[j];
 			if (valueToMap.find(c) == valueToMap.end())
 			{
-				mapToValue[valueToMap.size()] = c;
-				valueToMap[c] = valueToMap.size();
+				mapToValue.insert(std::pair<int, unsigned short>(valueToMap.size(),c));
+				valueToMap.insert(std::pair<unsigned short, int>(c, valueToMap.size()));
 			}
 		}
 		int zs = valueToMap.size();
@@ -124,7 +124,7 @@ public:
 			pp.push_back(mem[0]);
 		}
 		else
-		if (zs > 16)
+		if (zs > 64)
 		{
 			pp.push_back(1);
 			for (int j = 0; j < 16 * 16; j++)
@@ -134,75 +134,22 @@ public:
 			}
 		}
 		else
-		if (zs > 4)
-		{
-			pp.push_back(2 | (zs - 1) << 4);
-			for (int m = 0; m < zs; m++)
-			{
-				pp.push_back(mapToValue[m]);
-			}
-			for (int m = zs; m < 16; m++)
-			{
-				pp.push_back(0);
-			}
-			for (int j = 0; j < 16 * 16 / 8; j++)
-			{
-				unsigned long hh = 0;
-				for (int b = 0; b < 8; b++)
-				{
-					unsigned short c = mem[j * 8 + b];
-					std::map<unsigned short, int>::iterator it = valueToMap.find(c);
-					unsigned short n = it->second;
-					//						printf("%i,",n);
-					hh |= n << (4 * b);
-				}
-				pp.push_back(hh >> 16);
-				pp.push_back(hh & 0xffff);
-			}
-			//				printf("\n");
-			/**/
-			/*				unsigned short c = mem[0 + i * 16 * 16 + offset];
-			std::map<unsigned short, int>::iterator it = valueToMap.find(c);
-			unsigned short nLast = it->second;
-			int counter = 0;
-			unsigned char pckList[256];
-			for (int j = 1; j < 16 * 16; j++)
-			{
-			unsigned short c = mem[j + i * 16 * 16 + offset];
-			std::map<unsigned short, int>::iterator it = valueToMap.find(c);
-			unsigned short n = it->second;
-			if ((nLast % 16) != n)
-			{
-			pckList[counter++] = nLast;
-			nLast = n;
-			}
-			else
-			{
-			if((nLast >> 4) != 0xf)
-			nLast += 0x10;
-			else
-			{
-			pckList[counter++] = nLast;
-			nLast &= 0xf;
-			}
-			}
-			}
-			pckList[counter++] = nLast;
-			if (counter & 1)
-			pckList[counter++] = 0;
-			for (int i = 0; i < counter; i++)
-			{
-			//					printf("%2.2x,",pckList[i]);
-			}
-			for (int i = 0; i < counter / 2; i++)
-			{
-			unsigned short pck = pckList[i * 2] | (pckList[i * 2 + 1] << 8);
-			pp.push_back(pck);
-			}
-			/**/
-		}
+		if (zs > 32)
+			compressBlock16(mem, pp, valueToMap, mapToValue, zs, 6);
 		else
-			//			if (zs > 4)
+		if (zs > 16)
+			compressBlock16(mem, pp, valueToMap, mapToValue, zs, 5);
+		else
+		if (zs > 8)
+			compressBlock16(mem, pp, valueToMap, mapToValue, zs, 4);
+		else
+		if (zs > 4)
+			compressBlock16(mem, pp, valueToMap, mapToValue, zs, 3);
+		else
+		if (zs > 2)
+			compressBlock16(mem, pp, valueToMap, mapToValue, zs, 2);
+		else
+					//			if (zs > 4)
 		{
 			pp.push_back(3);
 			for (int m = 0; m < zs; m++)
@@ -236,6 +183,49 @@ public:
 			unsigned short a = *pp.begin();
 			pp.pop_front();
 			blockPck[i++] = a;
+		}
+	}
+
+	void compressBlock16(unsigned short *mem,std::list<unsigned short> &pp,std::map<unsigned short, int> &valueToMap,std::map<int, unsigned short> &mapToValue,int zs,int diff)
+	{
+		unsigned short c = mem[0];
+		std::map<unsigned short, int>::iterator it = valueToMap.find(c);
+		unsigned short nLast = it->second;
+		int counter = 0;
+		unsigned char pckList[256];
+		for (int j = 1; j < 16 * 16; j++)
+		{
+			unsigned short c = mem[j];
+			std::map<unsigned short, int>::iterator it = valueToMap.find(c);
+			unsigned short n = it->second;
+			if ((nLast % (1 << diff)) != n)
+			{
+				pckList[counter++] = nLast;
+				nLast = n;
+			}
+			else
+			{
+				if ((nLast >> diff) != (1 << (8 - diff)) - 1)
+					nLast += 1 << diff;
+				else
+				{
+					pckList[counter++] = nLast;
+					nLast %= (1 << diff);
+				}
+			}
+		}
+		pckList[counter++] = nLast;
+		if (counter & 1)
+			pckList[counter++] = 0xff;
+		pp.push_back(4 | ((zs - 1) << 4) | (diff << 13));
+		for (int m = 0; m < zs; m++)
+		{
+			pp.push_back(mapToValue[m]);
+		}
+		for (int i = 0; i < counter / 2; i++)
+		{
+			unsigned short pck = pckList[i * 2 + 1] | (pckList[i * 2] << 8);
+			pp.push_back(pck);
 		}
 	}
 
@@ -289,7 +279,7 @@ public:
 		FILE *pFile;
 
 		char fname[256];
-		sprintf(fname, "tmp%3.3i.ppm", num);
+		sprintf(fname, "../asm/tmp%5.5i.ppm", num);
 		pFile = fopen(fname, "wb");
 		if (pFile == NULL)
 			return;
@@ -297,12 +287,18 @@ public:
 		unsigned int header = 0;
 		unsigned int length = 0;
 
-		for (int i = 0; i < BlockMap.size(); i++)
+		for (int i = 0; i < frame->height / 16; i++)
 		{
-			BlockMap[i]->compress();
-			length += BlockMap[i]->newlen;
-			if (sd)
-				length++;
+			for (int j = 0; j < frame->width / 16; j++)
+			{
+				BLOCK *block = 0;
+				if (BlockMap.find(i * frame->width / 16 + j) != BlockMap.end())
+					block = BlockMap.find(i * frame->width / 16 + j)->second;
+				block->compress();
+				length += block->newlen;
+				if (sd)
+					length++;
+			}
 		}
 
 		if (!sd)
@@ -430,7 +426,8 @@ public:
 				if (mv->source >= 0)
 					continue;
 
-/*				VECTOR v;
+				gcount++;
+				/*				VECTOR v;
 				v.init();
 				v.frameindexDst = num;
 				v.frameindexSrc = num - 1;// +mv->source;
@@ -461,21 +458,21 @@ public:
 							unsigned short u_diff = abs(((a >> 5) & 31) - ((b >> 5) & 31));
 							unsigned short v_diff = abs(((a >> 0) & 31) - ((b >> 0) & 31));
 							unsigned short c = a - b;
-/*							if (y_diff == 0 && (u_diff * u_diff + v_diff * v_diff) <= 2)
+							if (y_diff == 0 && (u_diff * u_diff + v_diff * v_diff) <= 2)
 							{
 								YUV_Buf[(mv->dst_y + i) * frame->width + (mv->dst_x + j)] = b;
-								YUV_Buf_diff[(mv->dst_y + i) * frame->width + (mv->dst_x + j)] = 0;
+								block->block[(i + mv->h / 2) * 16 + j + mv->w / 2] = 0;
 							}
 							else
-*/							{
+							{
 								c &= 0x7fff;
-	//							YUV_Buf_diff[(mv->dst_y + i) * frame->width + (mv->dst_x + j)] = c;
 								block->block[(i + mv->h / 2) * 16 + j + mv->w / 2] = c;
 							}
 						}
 					}
 				}
 			}
+			printf("");
 		}
 	}
 	AVFrame *frame;
