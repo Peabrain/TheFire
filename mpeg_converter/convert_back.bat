@@ -1,0 +1,1 @@
+ffmpeg -r 60 -f image2 -s 1920x1080 -i tmp%03d.ppm -vcodec libx264 -crf 10 -pix_fmt yuv420p test.mp4

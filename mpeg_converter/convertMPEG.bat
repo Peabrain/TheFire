@@ -1,0 +1,1 @@
+ffmpeg -i tmp.mp4 -b:v 6000k tmp.mpeg
