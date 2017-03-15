@@ -149,7 +149,8 @@ public:
 		if (zs > 2)
 			compressBlock16(mem, pp, valueToMap, mapToValue, zs, 2);
 		else
-					//			if (zs > 4)
+			compressBlock16(mem, pp, valueToMap, mapToValue, zs, 1);
+/*		//			if (zs > 4)
 		{
 			pp.push_back(3);
 			for (int m = 0; m < zs; m++)

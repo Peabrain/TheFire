@@ -310,145 +310,6 @@ copyblock_empty:
 	dbf		d6,.cbe1_0
 	bra.b	.cbe_end
 .cbe2:
-	cmp.w	#2,d6
-	bne.b	.cbe3
-	move.l	a0,a1
-	lsr.l	#4,d0
-	and.w	#$0f,d0
-	addq	#1,d0
-	add.w	d0,a0
-	add.w	d0,a0
-	eor.l	d1,d1
-	moveq	#17,d2
-.cbe2_6:
-	swap	d1
-	eor.w	d1,d1
-	move.b	(a0)+,d1
-	move.w	d1,d0
-	and.w	#$f,d1
-	lsr.w	#4,d0
-	move.w	(a1,d1.w*2),d1
-	swap	d1
-	add.w	#1,d1
-	add.w	d0,d1
-	swap	d1
-.cbe2_4:
-	subq	#1,d2
-	beq.b	.cbe2_2
-.cbe2_3:
-	move.w	d1,(a2)+
-	dbf		d0,.cbe2_4
-	bra.b	.cbe2_5
-.cbe2_2:
-	add.l	#(320-16)*2,a2
-	moveq	#16,d2
-	bra.b	.cbe2_3
-.cbe2_5:
-	swap	d1
-	cmp.w	#256,d1
-	bne.b	.cbe2_6
-	move.l	a0,d0
-	and.l	#1,d0
-	beq.b	.cbe2_7
-	addq	#1,a0
-.cbe2_7:
-	bra.b	.cbe_end
-.cbe3:
-	cmp.w	#3,d6
-	bne.b	.cbe4
-;	add.l	#4*2+16*16/8,a0
-;	bra.b	.cbe_end
-	move.l	a0,a1
-	add.l	#4*2,a0
-	move.w	#16-1,d6
-.cbe3_1:
-	move.l	(a0)+,d0
-	move.w	d0,d1
-	and.w	#$3,d1
-	move.w	(a1,d1.w*2),d2
-	lsr.l	#2,d0
-	swap	d2
-	move.w	d0,d1
-	and.w	#$3,d1
-	move.w	(a1,d1.w*2),d2
-	lsr.l	#2,d0
-	move.l	d2,(a2)+
-	move.w	d0,d1
-	and.w	#$3,d1
-	move.w	(a1,d1.w*2),d2
-	lsr.l	#2,d0
-	swap	d2
-	move.w	d0,d1
-	and.w	#$3,d1
-	move.w	(a1,d1.w*2),d2
-	lsr.l	#2,d0
-	move.l	d2,(a2)+
-	move.w	d0,d1
-	and.w	#$3,d1
-	move.w	(a1,d1.w*2),d2
-	lsr.l	#2,d0
-	swap	d2
-	move.w	d0,d1
-	and.w	#$3,d1
-	move.w	(a1,d1.w*2),d2
-	lsr.l	#2,d0
-	move.l	d2,(a2)+
-	move.w	d0,d1
-	and.w	#$3,d1
-	move.w	(a1,d1.w*2),d2
-	lsr.l	#2,d0
-	swap	d2
-	move.w	d0,d1
-	and.w	#$3,d1
-	move.w	(a1,d1.w*2),d2
-	lsr.l	#2,d0
-	move.l	d2,(a2)+
-	move.w	d0,d1
-	and.w	#$3,d1
-	move.w	(a1,d1.w*2),d2
-	lsr.l	#2,d0
-	swap	d2
-	move.w	d0,d1
-	and.w	#$3,d1
-	move.w	(a1,d1.w*2),d2
-	lsr.l	#2,d0
-	move.l	d2,(a2)+
-	move.w	d0,d1
-	and.w	#$3,d1
-	move.w	(a1,d1.w*2),d2
-	lsr.l	#2,d0
-	swap	d2
-	move.w	d0,d1
-	and.w	#$3,d1
-	move.w	(a1,d1.w*2),d2
-	lsr.l	#2,d0
-	move.l	d2,(a2)+
-	move.w	d0,d1
-	and.w	#$3,d1
-	move.w	(a1,d1.w*2),d2
-	lsr.l	#2,d0
-	swap	d2
-	move.w	d0,d1
-	and.w	#$3,d1
-	move.w	(a1,d1.w*2),d2
-	lsr.l	#2,d0
-	move.l	d2,(a2)+
-	move.w	d0,d1
-	and.w	#$3,d1
-	move.w	(a1,d1.w*2),d2
-	lsr.l	#2,d0
-	swap	d2
-	move.w	d0,d1
-	and.w	#$3,d1
-	move.w	(a1,d1.w*2),d2
-	lsr.l	#2,d0
-	move.l	d2,(a2)+
-	add.l	#(320-16)*2,a2
-	dbf		d6,.cbe3_1
-	bra.b	.cbe_end
-.cbe4:
-;	cmp.w	#4,d6
-;	bne.b	.cbe3
 	move.l	a0,a1
 	move.w	d0,d6
 	lsr.w	#8,d6
@@ -463,6 +324,7 @@ copyblock_empty:
 	add.w	d0,a0
 	eor.l	d1,d1
 	moveq	#17,d2
+	move.l	#(320-16)*2,d5
 .cbe4_6:
 	swap	d1
 	eor.w	d1,d1
@@ -483,7 +345,7 @@ copyblock_empty:
 	dbf		d0,.cbe4_4
 	bra.b	.cbe4_5
 .cbe4_2:
-	add.l	#(320-16)*2,a2
+	add.l	d5,a2
 	moveq	#16,d2
 	bra.b	.cbe4_3
 .cbe4_5:
@@ -597,165 +459,6 @@ copyblock:
 	bra.b 	.cb_end
 	
 .cb2:
-	cmp.w	#2,d6
-	bne.b	.cb3
-	move.l	a0,a3
-	lsr.l	#4,d0
-	and.w	#$0f,d0
-	addq	#1,d0
-	add.w	d0,a0
-	add.l	d0,a0
-	eor.l	d1,d1
-	move.w	#$7fff,d4
-	moveq	#17,d2
-.cb2_6:
-	swap	d1
-	eor.w	d1,d1
-	move.b	(a0)+,d1
-	move.w	d1,d0
-	and.w	#$f,d1
-	lsr.w	#4,d0
-	move.w	(a3,d1.w*2),d1
-	swap	d1
-	add.w	#1,d1
-	add.w	d0,d1
-	swap	d1
-.cb2_4:
-	subq	#1,d2
-	beq.b	.cb2_2
-.cb2_3:
-	move.w	d1,d3
-	add.w	(a1)+,d3
-	and.w	d4,d3
-	move.w	d3,(a2)+
-	dbf		d0,.cb2_4
-	bra.b	.cb2_5
-.cb2_2:
-	add.l	#(320-16)*2,a1
-	add.l	#(320-16)*2,a2
-	moveq	#16,d2
-	bra.b	.cb2_3
-.cb2_5:
-	swap	d1
-	cmp.w	#256,d1
-	bne.b	.cb2_6
-	move.l	a0,d0
-	and.l	#1,d0
-	beq.b	.cb2_7
-	addq	#1,a0
-.cb2_7:
-	bra.b 	.cb_end
-.cb3:
-	cmp.w	#3,d6
-	bne.b	.cb4
-	move.l	a0,a3
-	add.l	#4*2,a0
-	move.l	#$7fff7fff,d7
-
-	move.w	#16-1,d6
-.cb3_1:
-	move.l	(a0)+,d4
-	move.w	d4,d1
-	and.w	#$3,d1
-	move.w	(a3,d1.w*2),d0
-	lsr.l	#2,d4
-	move.w	d4,d1
-	swap	d0
-	and.w	#$3,d1
-	move.w	(a3,d1.w*2),d0
-	lsr.l	#2,d4
-	add.l	(a1)+,d0
-	and.l	d7,d0
-	move.l	d0,(a2)+
-	move.w	d4,d1
-	and.w	#$3,d1
-	move.w	(a3,d1.w*2),d0
-	lsr.l	#2,d4
-	move.w	d4,d1
-	swap	d0
-	and.w	#$3,d1
-	move.w	(a3,d1.w*2),d0
-	lsr.l	#2,d4
-	add.l	(a1)+,d0
-	and.l	d7,d0
-	move.l	d0,(a2)+
-	move.w	d4,d1
-	and.w	#$3,d1
-	move.w	(a3,d1.w*2),d0
-	lsr.l	#2,d4
-	move.w	d4,d1
-	swap	d0
-	and.w	#$3,d1
-	move.w	(a3,d1.w*2),d0
-	lsr.l	#2,d4
-	add.l	(a1)+,d0
-	and.l	d7,d0
-	move.l	d0,(a2)+
-	move.w	d4,d1
-	and.w	#$3,d1
-	move.w	(a3,d1.w*2),d0
-	lsr.l	#2,d4
-	move.w	d4,d1
-	swap	d0
-	and.w	#$3,d1
-	move.w	(a3,d1.w*2),d0
-	lsr.l	#2,d4
-	add.l	(a1)+,d0
-	and.l	d7,d0
-	move.l	d0,(a2)+
-	move.w	d4,d1
-	and.w	#$3,d1
-	move.w	(a3,d1.w*2),d0
-	lsr.l	#2,d4
-	move.w	d4,d1
-	swap	d0
-	and.w	#$3,d1
-	move.w	(a3,d1.w*2),d0
-	lsr.l	#2,d4
-	add.l	(a1)+,d0
-	and.l	d7,d0
-	move.l	d0,(a2)+
-	move.w	d4,d1
-	and.w	#$3,d1
-	move.w	(a3,d1.w*2),d0
-	lsr.l	#2,d4
-	move.w	d4,d1
-	swap	d0
-	and.w	#$3,d1
-	move.w	(a3,d1.w*2),d0
-	lsr.l	#2,d4
-	add.l	(a1)+,d0
-	and.l	d7,d0
-	move.l	d0,(a2)+
-	move.w	d4,d1
-	and.w	#$3,d1
-	move.w	(a3,d1.w*2),d0
-	lsr.l	#2,d4
-	move.w	d4,d1
-	swap	d0
-	and.w	#$3,d1
-	move.w	(a3,d1.w*2),d0
-	lsr.l	#2,d4
-	add.l	(a1)+,d0
-	and.l	d7,d0
-	move.l	d0,(a2)+
-	move.w	d4,d1
-	and.w	#$3,d1
-	move.w	(a3,d1.w*2),d0
-	lsr.l	#2,d4
-	move.w	d4,d1
-	swap	d0
-	and.w	#$3,d1
-	move.w	(a3,d1.w*2),d0
-	lsr.l	#2,d4
-	add.l	(a1)+,d0
-	and.l	d7,d0
-	move.l	d0,(a2)+
-	add.l	#(320-16)*2,a1
-	add.l	#(320-16)*2,a2
-	dbf		d6,.cb3_1
-	bra.b 	.cb_end
-.cb4:
 	move.l	a0,a3
 	move.w	d0,d6
 	lsr.w	#8,d6
@@ -771,6 +474,7 @@ copyblock:
 	eor.l	d1,d1
 	move.w	#$7fff,d4
 	moveq	#17,d2
+	move.l	#(320-16)*2,d5
 .cb4_6:
 	swap	d1
 	eor.w	d1,d1
@@ -794,8 +498,8 @@ copyblock:
 	dbf		d0,.cb4_4
 	bra.b	.cb4_5
 .cb4_2:
-	add.l	#(320-16)*2,a1
-	add.l	#(320-16)*2,a2
+	add.l	d5,a1
+	add.l	d5,a2
 	moveq	#16,d2
 	bra.b	.cb4_3
 .cb4_5:
