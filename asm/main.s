@@ -84,7 +84,7 @@ mainloop:
 ;	cmp.b	#$4,$dff006
 ;	bne.b	.wframe
 .wframe2:
-	cmp.b	#$5,$dff006
+	cmp.b	#$50,$dff006
 	bne.b	.wframe2
 ;.wframe3:
 ;	cmp.b	#$f1,$dff006

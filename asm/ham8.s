@@ -154,11 +154,11 @@ _Ham8_Deinit:
 ;---------------------------------
 _Ham8_InnerLoop:
 
-;	move.w 	#$fff,$dff180
+	move.w 	#$fff,$dff180
 
-	move.l	lastframe,d0
-	and.l	#127,d0
-	bne.b	te
+;	move.l	lastframe,d0
+;	and.l	#127,d0
+;	bne.b	te
 	
 ;	move.l	_Frames,d0
 ;	move.l	d0,d1
@@ -170,10 +170,10 @@ _Ham8_InnerLoop:
 	
 	bsr	RenderLoop
 
-	move.l	Screens,a0
-	add.l	#ScreenWidth/8*ScreenHeight*7,a0
+;	move.l	Screens,a0
+;	add.l	#ScreenWidth/8*ScreenHeight*7,a0
 ;	move.l	#$ffffffff,(a0)
-	add.l	#ScreenWidth/8-4,a0
+;	add.l	#ScreenWidth/8-4,a0
 ;	move.l	#$ffffffff,(a0)
 	
 	lea	Screens,a0
@@ -209,7 +209,7 @@ _Ham8_InnerLoop:
 
 te:
 	add.l	#1,lastframe
-;	move.w 	#$f00,$dff180	
+	move.w 	#$f00,$dff180	
 
 	move.l	Copper+8,d0
 	move.w	d0,CopperAdr+6
@@ -332,6 +332,52 @@ DrawText:
 ;--------------------------------------------------------------------	
 RenderLoop:
 
+	lea	buffer,a0
+	lea	rgb,a1
+	lea	pic,a2
+	move.l	#%1111110111111011111100000000,d6
+	move.l	#$00ffffff,d5
+	move.l	#0,d0				; rrrrrr0gggggg0bbbbbb00000000
+	move.w	#192-1,d7
+.RLf2:
+	swap	d7
+	eor.l	d4,d4
+	move.w	#320/4-1,d7
+.RLf1:
+	move.l	d0,d1
+	sub.l	(a1)+,d1
+	and.l	d6,d1
+	lsr.l	#8,d1
+	add.l	(a0,d1.l*4),d0		; new rrrrrr0gggggg0bbbbbbXXXXXXXX
+	move.b	d0,d4				; byte to chunky
+	move.l	d0,d1
+	sub.l	(a1)+,d1
+	lsl.l	#8,d4
+	and.l	d6,d1
+	lsr.l	#8,d1
+	add.l	(a0,d1.l*4),d0
+	move.b	d0,d4
+	move.l	d0,d1
+	sub.l	(a1)+,d1
+	lsl.l	#8,d4
+	and.l	d6,d1
+	lsr.l	#8,d1
+	add.l	(a0,d1.l*4),d0
+	move.b	d0,d4
+	move.l	d0,d1
+	sub.l	(a1)+,d1
+	lsl.l	#8,d4
+	and.l	d6,d1
+	lsr.l	#8,d1
+	add.l	(a0,d1.l*4),d0
+	move.b	d0,d4
+	move.l	d4,(a2)+
+	dbf		d7,.RLf1
+	swap	d7
+	dbf		d7,.RLf2
+	
+	
+
 ;	bsr 	LoadMyVidFile
 
 	lea		pic,a0
@@ -343,7 +389,7 @@ RenderLoop:
 	move.l	Screens,A1		; destination (planar)
 	jsr	_BEST_c2p
 
-	
+	rts
 	move.l 	Screens,a3
 	lea 	pic,a2
 	move.l 	picindex,d0	
@@ -1086,4 +1132,8 @@ text:
 	section	pic,BSS_F
 pic:
 	ds.b 	(ScreenWidth/8*ScreenHeight*Planes)*Frames
+rgb:
+	ds.l	320*192
+buffer:
+	ds.l	8*1024*1024
 *********************************************************************
